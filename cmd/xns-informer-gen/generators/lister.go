@@ -95,13 +95,18 @@ func (l *$.type|private$NamespaceLister) List(selector labels.Selector) (res []*
 	return list$.type|public$(l.lister, selector)
 }
 
-func (l *$.type|private$NamespaceLister) Get(name string) (*v1.$.type|public$, error) {
+func (l *$.type|private$NamespaceLister) Get(name string) (*$.version$.$.type|public$, error) {
 	obj, err := l.lister.Get(name)
 	if err != nil {
 		return nil, err
 	}
 
-	return convert$.type|public$(obj)
+    out := &$.version$.$.type|public${}
+	if err := xnsinformers.ConvertUnstructured(obj, out); err != nil {
+        return nil, err
+    }
+
+    return out, nil
 }
 `
 
@@ -113,29 +118,14 @@ func list$.type|public$(l xnsinformers.SimpleLister, s labels.Selector) (res []*
 	}
 
 	for _, obj := range objects {
-		o, err := convert$.type|public$(obj)
-		if err != nil {
-			return nil, err
-		}
+        out := &$.version$.$.type|public${}
+        if err := xnsinformers.ConvertUnstructured(obj, out); err != nil {
+            return nil, err
+        }
 
-		res = append(res, o)
+		res = append(res, out)
 	}
 
 	return res, nil
-}
-
-func convert$.type|public$(obj runtime.Object) (*$.version$.$.type|public$, error) {
-	u, ok := obj.(*unstructured.Unstructured)
-	if !ok {
-		return nil, fmt.Errorf("unstructured conversion failed")
-	}
-
-	out := &$.version$.$.type|public${}
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, &out)
-	if err != nil {
-		return nil, err
-	}
-
-	return out, nil
 }
 `

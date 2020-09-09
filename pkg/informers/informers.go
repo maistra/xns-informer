@@ -8,6 +8,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -258,4 +259,23 @@ func (l *NilNamespaceLister) List(selector labels.Selector) ([]runtime.Object, e
 
 func (l *NilNamespaceLister) Get(name string) (runtime.Object, error) {
 	return nil, l.error(name)
+}
+
+// ConvertUnstructured takes a runtime.Object, which *must* be backed by a
+// pointer to an unstructured object, and a second runtime.Object which should
+// be backed by a concrete type that the unstructured object is expected to
+// represent.  ConvertUnstructured will use the default converter from the
+// runtime package to convert the unstructured object to the concrete type.
+func ConvertUnstructured(unstructuredObj runtime.Object, out runtime.Object) error {
+	u, ok := unstructuredObj.(*unstructured.Unstructured)
+	if !ok {
+		return fmt.Errorf("unstructured conversion failed")
+	}
+
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, out)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
