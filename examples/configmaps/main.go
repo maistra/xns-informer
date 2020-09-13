@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/labels"
@@ -32,11 +33,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	resync := 1 * time.Minute
 	stopCh := make(chan struct{})
 	namespaces := os.Args[1:]
 	log.Printf("Creating informer for namespaces: %v", namespaces)
 
-	factory, err := xnsinfomers.NewInformerFactory(client, namespaces)
+	factory, err := xnsinfomers.NewInformerFactory(client, resync, namespaces)
 	if err != nil {
 		log.Fatal(err)
 	}
