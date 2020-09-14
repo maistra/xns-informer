@@ -22,11 +22,11 @@ func (f *endpointsInformer) resource() schema.GroupVersionResource {
 }
 
 func (f *endpointsInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ForResource(f.resource()).Informer()
+	return f.factory.NamespacedResource(f.resource()).Informer()
 }
 
 func (f *endpointsInformer) Lister() listers.EndpointsLister {
-	return &endpointsLister{lister: f.factory.ForResource(f.resource()).Lister()}
+	return &endpointsLister{lister: f.factory.NamespacedResource(f.resource()).Lister()}
 }
 
 type endpointsLister struct {

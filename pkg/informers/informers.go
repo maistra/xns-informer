@@ -27,7 +27,8 @@ type SimpleLister interface {
 
 type InformerFactory interface {
 	Start(stopCh <-chan struct{})
-	ForResource(resource schema.GroupVersionResource) informers.GenericInformer
+	ClusterResource(resource schema.GroupVersionResource) informers.GenericInformer
+	NamespacedResource(resource schema.GroupVersionResource) informers.GenericInformer
 	WaitForCacheSync(stopCh <-chan struct{})
 	SetNamespaces(namespaces []string)
 }
@@ -100,10 +101,27 @@ func (f *multiNamespaceInformerFactory) SetNamespaces(namespaces []string) {
 	}
 }
 
+// ClusterResource returns a new cross-namespace informer for the given resource
+// type and assumes it is cluster-scoped.  This means the returned informer will
+// treat AddNamespace and RemoveNamespace as no-ops.
+func (f *multiNamespaceInformerFactory) ClusterResource(gvr schema.GroupVersionResource) informers.GenericInformer {
+	return f.ForResource(gvr, false)
+}
+
+// NamespacedResource returns a new cross-namespace informer for the given
+// resource type and assumes it is namespaced.  Requesting a cluster-scoped
+// resource via this method will result in errors from the underlying watch and
+// will produce no events.
+func (f *multiNamespaceInformerFactory) NamespacedResource(gvr schema.GroupVersionResource) informers.GenericInformer {
+	return f.ForResource(gvr, true)
+}
+
 // ForResource returns a new cross-namespace informer for the given resource
 // type.  If an informer for this resource type has been previously requested,
 // it will be returned, otherwise a new one will be created.
-func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResource) informers.GenericInformer {
+//
+// TODO: Should we use the discovery API to determine resource scope?
+func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResource, namespaced bool) informers.GenericInformer {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
@@ -113,6 +131,11 @@ func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResou
 	}
 
 	newInformerFunc := func(namespace string) informers.GenericInformer {
+		// Namespace argument is ignored for cluster-scoped resources.
+		if !namespaced {
+			namespace = metav1.NamespaceAll
+		}
+
 		return dynamicinformer.NewFilteredDynamicInformer(
 			f.client,
 			gvr,
@@ -123,7 +146,7 @@ func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResou
 		)
 	}
 
-	informer := NewMultiNamespaceInformer(f.resyncPeriod, newInformerFunc)
+	informer := NewMultiNamespaceInformer(namespaced, f.resyncPeriod, newInformerFunc)
 	lister := NewMultiNamespaceLister(informer, gvr)
 
 	for namespace := range f.namespaces {
@@ -205,6 +228,7 @@ type multiNamespaceInformer struct {
 	eventHandlers []eventHandlerData
 	indexers      []cache.Indexers
 	resyncPeriod  time.Duration
+	namespaced    bool
 	lock          sync.Mutex
 	newInformer   NewInformerFunc
 }
@@ -214,14 +238,29 @@ var _ cache.SharedIndexInformer = &multiNamespaceInformer{}
 // NewMultiNamespaceInformer returns a new cross-namespace informer.  The given
 // NewInformerFunc will be used to craft new single-namespace informers when
 // adding namespaces.
-func NewMultiNamespaceInformer(resync time.Duration, newInformer NewInformerFunc) *multiNamespaceInformer {
-	return &multiNamespaceInformer{
+func NewMultiNamespaceInformer(namespaced bool, resync time.Duration, newInformer NewInformerFunc) *multiNamespaceInformer {
+	informer := &multiNamespaceInformer{
 		informers:     make(map[string]*informerData),
 		eventHandlers: make([]eventHandlerData, 0),
 		indexers:      make([]cache.Indexers, 0),
+		namespaced:    namespaced,
 		resyncPeriod:  resync,
 		newInformer:   newInformer,
 	}
+
+	// AddNamespace and RemoveNamespace are no-ops for cluster-scoped
+	// informers.  They watch metav1.NamespaceAll only.
+	if !namespaced {
+		i := newInformer(metav1.NamespaceAll)
+
+		informer.informers[metav1.NamespaceAll] = &informerData{
+			informer: i.Informer(),
+			lister:   i.Lister(),
+			stopCh:   make(chan struct{}),
+		}
+	}
+
+	return informer
 }
 
 func (i *multiNamespaceInformer) GetController() cache.Controller {
@@ -252,8 +291,10 @@ func (i *multiNamespaceInformer) AddNamespace(namespace string) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	if _, ok := i.informers[namespace]; ok {
-		return // Already have an informer for this namespace.
+	// If an informer for this namespace already exists, or the
+	// watched resource is cluster-scoped, this is a no-op.
+	if _, ok := i.informers[namespace]; ok || !i.namespaced {
+		return
 	}
 
 	informer := i.newInformer(namespace)
@@ -283,8 +324,10 @@ func (i *multiNamespaceInformer) RemoveNamespace(namespace string) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	if _, ok := i.informers[namespace]; !ok {
-		return // No informer for this namespace.
+	// If there is no informer for this namespace, or the watched
+	// resource is cluster-scoped, this is a no-op.
+	if _, ok := i.informers[namespace]; !ok || !i.namespaced {
+		return
 	}
 
 	close(i.informers[namespace].stopCh)

@@ -9,6 +9,7 @@ import (
 type Interface interface {
 	ConfigMaps() informers.ConfigMapInformer
 	Endpoints() informers.EndpointsInformer
+	Namespaces() informers.NamespaceInformer
 	Pods() informers.PodInformer
 	Services() informers.ServiceInformer
 }
@@ -25,6 +26,9 @@ func (v *version) ConfigMaps() informers.ConfigMapInformer {
 }
 func (v *version) Endpoints() informers.EndpointsInformer {
 	return &endpointsInformer{factory: v.factory}
+}
+func (v *version) Namespaces() informers.NamespaceInformer {
+	return &namespaceInformer{factory: v.factory}
 }
 func (v *version) Pods() informers.PodInformer {
 	return &podInformer{factory: v.factory}

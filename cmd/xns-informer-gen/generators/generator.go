@@ -20,6 +20,7 @@ var typesToGenerate = map[string][]string{
 		"Endpoints",
 		"Pod",
 		"Service",
+		"Namespace",
 	},
 	"k8s.io/api/discovery/v1alpha1": {"EndpointSlices"},
 	"k8s.io/api/networking/v1beta1": {"Ingress", "IngressClass"},

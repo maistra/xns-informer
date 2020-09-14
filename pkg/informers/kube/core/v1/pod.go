@@ -22,11 +22,11 @@ func (f *podInformer) resource() schema.GroupVersionResource {
 }
 
 func (f *podInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ForResource(f.resource()).Informer()
+	return f.factory.NamespacedResource(f.resource()).Informer()
 }
 
 func (f *podInformer) Lister() listers.PodLister {
-	return &podLister{lister: f.factory.ForResource(f.resource()).Lister()}
+	return &podLister{lister: f.factory.NamespacedResource(f.resource()).Lister()}
 }
 
 type podLister struct {

@@ -22,11 +22,11 @@ func (f *configMapInformer) resource() schema.GroupVersionResource {
 }
 
 func (f *configMapInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ForResource(f.resource()).Informer()
+	return f.factory.NamespacedResource(f.resource()).Informer()
 }
 
 func (f *configMapInformer) Lister() listers.ConfigMapLister {
-	return &configMapLister{lister: f.factory.ForResource(f.resource()).Lister()}
+	return &configMapLister{lister: f.factory.NamespacedResource(f.resource()).Lister()}
 }
 
 type configMapLister struct {

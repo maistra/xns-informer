@@ -7,6 +7,8 @@ import (
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
+
+	"k8s.io/code-generator/cmd/client-gen/generators/util"
 )
 
 type listerGenerator struct {
@@ -31,10 +33,16 @@ func (g *listerGenerator) Imports(c *generator.Context) (imports []string) {
 }
 
 func (g *listerGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
+	tags, err := util.ParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
+	if err != nil {
+		return err
+	}
+
 	data := map[string]interface{}{
-		"type":    t,
-		"group":   g.groupVersion.Group,
-		"version": g.groupVersion.Version,
+		"type":       t,
+		"group":      g.groupVersion.Group,
+		"version":    g.groupVersion.Version,
+		"namespaced": !tags.NonNamespaced,
 	}
 
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
@@ -60,11 +68,19 @@ func (f *$.type|private$Informer) resource() schema.GroupVersionResource {
 }
 
 func (f *$.type|private$Informer) Informer() cache.SharedIndexInformer {
-	return f.factory.ForResource(f.resource()).Informer()
+$- if .namespaced$
+	return f.factory.NamespacedResource(f.resource()).Informer()
+$- else$
+    return f.factory.ClusterResource(f.resource()).Informer()
+$- end$
 }
 
 func (f *$.type|private$Informer) Lister() listers.$.type|public$Lister {
-	return &$.type|private$Lister{lister: f.factory.ForResource(f.resource()).Lister()}
+$- if .namespaced$
+	return &$.type|private$Lister{lister: f.factory.NamespacedResource(f.resource()).Lister()}
+$- else$
+	return &$.type|private$Lister{lister: f.factory.ClusterResource(f.resource()).Lister()}
+$- end$
 }
 `
 
@@ -79,12 +95,29 @@ func (l *$.type|private$Lister) List(selector labels.Selector) (res []*$.version
 	return list$.type|public$(l.lister, selector)
 }
 
+$ if .namespaced$
 func (l *$.type|private$Lister) $.type|publicPlural$(namespace string) listers.$.type|public$NamespaceLister {
 	return &$.type|private$NamespaceLister{lister: l.lister.ByNamespace(namespace)}
 }
+$- else$
+func (l *$.type|private$Lister) Get(name string) (*$.version$.$.type|public$, error) {
+	obj, err := l.lister.Get(name)
+	if err != nil {
+		return nil, err
+	}
+
+    out := &$.version$.$.type|public${}
+	if err := xnsinformers.ConvertUnstructured(obj, out); err != nil {
+        return nil, err
+    }
+
+    return out, nil
+}
+$- end$
 `
 
 var typedNamespaceLister = `
+$- if .namespaced$
 type $.type|private$NamespaceLister struct {
 	lister cache.GenericNamespaceLister
 }
@@ -108,6 +141,7 @@ func (l *$.type|private$NamespaceLister) Get(name string) (*$.version$.$.type|pu
 
     return out, nil
 }
+$- end$
 `
 
 var typedHelpers = `
