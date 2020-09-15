@@ -46,16 +46,11 @@ func (g *listerGenerator) GenerateType(c *generator.Context, t *types.Type, w io
 	}
 
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
-
 	sw.Do(typedInformer, data)
-	sw.Do(typedLister, data)
-	sw.Do(typedNamespaceLister, data)
-	sw.Do(typedHelpers, data)
 
 	return sw.Error()
 }
 
-// TODO: Fix resource() package.
 var typedInformer = `
 type $.type|private$Informer struct {
 	factory xnsinformers.InformerFactory
@@ -76,90 +71,7 @@ $- end$
 }
 
 func (f *$.type|private$Informer) Lister() listers.$.type|public$Lister {
-$- if .namespaced$
-	return &$.type|private$Lister{lister: f.factory.NamespacedResource(f.resource()).Lister()}
-$- else$
-	return &$.type|private$Lister{lister: f.factory.ClusterResource(f.resource()).Lister()}
-$- end$
-}
-`
-
-var typedLister = `
-type $.type|private$Lister struct {
-	lister cache.GenericLister
-}
-
-var _ listers.$.type|public$Lister = &$.type|private$Lister{}
-
-func (l *$.type|private$Lister) List(selector labels.Selector) (res []*$.version$.$.type|public$, err error) {
-	return list$.type|public$(l.lister, selector)
-}
-
-$ if .namespaced$
-func (l *$.type|private$Lister) $.type|publicPlural$(namespace string) listers.$.type|public$NamespaceLister {
-	return &$.type|private$NamespaceLister{lister: l.lister.ByNamespace(namespace)}
-}
-$- else$
-func (l *$.type|private$Lister) Get(name string) (*$.version$.$.type|public$, error) {
-	obj, err := l.lister.Get(name)
-	if err != nil {
-		return nil, err
-	}
-
-    out := &$.version$.$.type|public${}
-	if err := xnsinformers.ConvertUnstructured(obj, out); err != nil {
-        return nil, err
-    }
-
-    return out, nil
-}
-$- end$
-`
-
-var typedNamespaceLister = `
-$- if .namespaced$
-type $.type|private$NamespaceLister struct {
-	lister cache.GenericNamespaceLister
-}
-
-var _ listers.$.type|public$NamespaceLister = &$.type|private$NamespaceLister{}
-
-func (l *$.type|private$NamespaceLister) List(selector labels.Selector) (res []*$.version$.$.type|public$, err error) {
-	return list$.type|public$(l.lister, selector)
-}
-
-func (l *$.type|private$NamespaceLister) Get(name string) (*$.version$.$.type|public$, error) {
-	obj, err := l.lister.Get(name)
-	if err != nil {
-		return nil, err
-	}
-
-    out := &$.version$.$.type|public${}
-	if err := xnsinformers.ConvertUnstructured(obj, out); err != nil {
-        return nil, err
-    }
-
-    return out, nil
-}
-$- end$
-`
-
-var typedHelpers = `
-func list$.type|public$(l xnsinformers.SimpleLister, s labels.Selector) (res []*$.version$.$.type|public$, err error) {
-	objects, err := l.List(s)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, obj := range objects {
-        out := &$.version$.$.type|public${}
-        if err := xnsinformers.ConvertUnstructured(obj, out); err != nil {
-            return nil, err
-        }
-
-		res = append(res, out)
-	}
-
-	return res, nil
+    idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &$.version$.$.type|public${})
+    return listers.New$.type|public$Lister(idx)
 }
 `

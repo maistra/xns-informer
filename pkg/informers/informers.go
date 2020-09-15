@@ -2,21 +2,18 @@ package informers
 
 import (
 	"errors"
-	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/maistra/xns-informer/pkg/internal/sets"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/dynamic/dynamiclister"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 )
@@ -147,7 +144,7 @@ func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResou
 	}
 
 	informer := NewMultiNamespaceInformer(namespaced, f.resyncPeriod, newInformerFunc)
-	lister := NewMultiNamespaceLister(informer, gvr)
+	lister := dynamiclister.New(informer.GetIndexer(), gvr)
 
 	for namespace := range f.namespaces {
 		informer.AddNamespace(namespace)
@@ -155,7 +152,7 @@ func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResou
 
 	f.informers[gvr] = &multiNamespaceGenericInformer{
 		informer: informer,
-		lister:   lister,
+		lister:   dynamiclister.NewRuntimeObjectShim(lister),
 	}
 
 	return f.informers[gvr]
@@ -193,7 +190,7 @@ func (f *multiNamespaceInformerFactory) WaitForCacheSync(stopCh <-chan struct{})
 // provides cross-namespace informers and listers.
 type multiNamespaceGenericInformer struct {
 	informer *multiNamespaceInformer
-	lister   *multiNamespaceLister
+	lister   cache.GenericLister
 }
 
 var _ informers.GenericInformer = &multiNamespaceGenericInformer{}
@@ -268,11 +265,11 @@ func (i *multiNamespaceInformer) GetController() cache.Controller {
 }
 
 func (i *multiNamespaceInformer) GetStore() cache.Store {
-	panic("not implemented")
+	return NewCacheReader(i)
 }
 
 func (i *multiNamespaceInformer) GetIndexer() cache.Indexer {
-	panic("not implemented")
+	return NewCacheReader(i)
 }
 
 func (i *multiNamespaceInformer) LastSyncResourceVersion() string {
@@ -439,118 +436,15 @@ func (i *multiNamespaceInformer) getListers() map[string]cache.GenericLister {
 	return res
 }
 
-// multiNamespaceLister satisfies the GenericLister interface and works across a
-// set of namespaces.
-type multiNamespaceLister struct {
-	informer *multiNamespaceInformer
-	resource schema.GroupVersionResource
-}
+// getIndexers returns a map of namespaces to their cache.Indexer.
+func (i *multiNamespaceInformer) getIndexers() map[string]cache.Indexer {
+	i.lock.Lock()
+	defer i.lock.Unlock()
 
-var _ cache.GenericLister = &multiNamespaceLister{}
-
-// NewMultiNamespaceLister returns a new cross-namespace lister.
-func NewMultiNamespaceLister(i *multiNamespaceInformer, gvr schema.GroupVersionResource) *multiNamespaceLister {
-	return &multiNamespaceLister{informer: i, resource: gvr}
-}
-
-// List returns all objects matching the given label selector across all
-// namespaces the lister's backing informer knows about.  The resulting objects
-// will be runtime.Object interfaces backed by unstructured types.  Use the
-// conversion methods if you want concrete types.
-func (l *multiNamespaceLister) List(selector labels.Selector) ([]runtime.Object, error) {
-	var result []runtime.Object
-
-	for _, lister := range l.informer.getListers() {
-		objs, err := lister.List(selector)
-		if err != nil {
-			return nil, err
-		}
-
-		result = append(result, objs...)
+	res := make(map[string]cache.Indexer, len(i.informers))
+	for namespace, informer := range i.informers {
+		res[namespace] = informer.informer.GetIndexer()
 	}
 
-	return result, nil
-}
-
-// Get fetches the named object from the backing informer's cache.  As with
-// List(), the returned object is a runtime.Object interface backed by an
-// unstructured object.  Use the conversion methods if you want concrete types.
-func (l *multiNamespaceLister) Get(name string) (runtime.Object, error) {
-	namespace, _, err := cache.SplitMetaNamespaceKey(name)
-	if err != nil {
-		return nil, err
-	}
-
-	return l.ByNamespace(namespace).Get(name)
-}
-
-// ByNamespace returns a GenericNamespaceLister for the given namespace.  If the
-// backing informer doesn't track this namespace, a dummy lister that always
-// returns a not-found error is returned.
-func (l *multiNamespaceLister) ByNamespace(namespace string) cache.GenericNamespaceLister {
-	listers := l.informer.getListers()
-
-	if lister, ok := listers[metav1.NamespaceAll]; ok {
-		return lister.ByNamespace(namespace)
-	} else if lister, ok := listers[namespace]; ok {
-		return lister.ByNamespace(namespace)
-	}
-
-	return &NilNamespaceLister{
-		namespace: namespace,
-		resource:  l.resource,
-	}
-}
-
-// NilNamespaceLister is a GenericNamespaceLister that always returns not-found
-// errors.  It is returned when a multiNamespaceLister is asked for a namespaced
-// lister for a namespace it doesn't know about.
-type NilNamespaceLister struct {
-	namespace string
-	resource  schema.GroupVersionResource
-}
-
-var _ cache.GenericNamespaceLister = &NilNamespaceLister{}
-
-func (l *NilNamespaceLister) error(name string) error {
-	return &apierrors.StatusError{
-		ErrStatus: metav1.Status{
-			Status: metav1.StatusFailure,
-			Code:   http.StatusNotFound,
-			Reason: metav1.StatusReasonNotFound,
-			Details: &metav1.StatusDetails{
-				Group: l.resource.Group,
-				Kind:  l.resource.Resource,
-				Name:  name,
-			},
-			Message: fmt.Sprintf("namespace %q not included in informer cache", l.namespace),
-		},
-	}
-}
-
-func (l *NilNamespaceLister) List(selector labels.Selector) ([]runtime.Object, error) {
-	return nil, l.error("")
-}
-
-func (l *NilNamespaceLister) Get(name string) (runtime.Object, error) {
-	return nil, l.error(name)
-}
-
-// ConvertUnstructured takes a runtime.Object, which *must* be backed by a
-// pointer to an unstructured object, and a second runtime.Object which should
-// be backed by a concrete type that the unstructured object is expected to
-// represent.  ConvertUnstructured will use the default converter from the
-// runtime package to convert the unstructured object to the concrete type.
-func ConvertUnstructured(unstructuredObj runtime.Object, out runtime.Object) error {
-	u, ok := unstructuredObj.(*unstructured.Unstructured)
-	if !ok {
-		return fmt.Errorf("unstructured conversion failed")
-	}
-
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.Object, out)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return res
 }
