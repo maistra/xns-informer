@@ -4,7 +4,6 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
@@ -26,61 +25,6 @@ func (f *endpointsInformer) Informer() cache.SharedIndexInformer {
 }
 
 func (f *endpointsInformer) Lister() listers.EndpointsLister {
-	return &endpointsLister{lister: f.factory.NamespacedResource(f.resource()).Lister()}
-}
-
-type endpointsLister struct {
-	lister cache.GenericLister
-}
-
-var _ listers.EndpointsLister = &endpointsLister{}
-
-func (l *endpointsLister) List(selector labels.Selector) (res []*v1.Endpoints, err error) {
-	return listEndpoints(l.lister, selector)
-}
-
-func (l *endpointsLister) Endpoints(namespace string) listers.EndpointsNamespaceLister {
-	return &endpointsNamespaceLister{lister: l.lister.ByNamespace(namespace)}
-}
-
-type endpointsNamespaceLister struct {
-	lister cache.GenericNamespaceLister
-}
-
-var _ listers.EndpointsNamespaceLister = &endpointsNamespaceLister{}
-
-func (l *endpointsNamespaceLister) List(selector labels.Selector) (res []*v1.Endpoints, err error) {
-	return listEndpoints(l.lister, selector)
-}
-
-func (l *endpointsNamespaceLister) Get(name string) (*v1.Endpoints, error) {
-	obj, err := l.lister.Get(name)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &v1.Endpoints{}
-	if err := xnsinformers.ConvertUnstructured(obj, out); err != nil {
-		return nil, err
-	}
-
-	return out, nil
-}
-
-func listEndpoints(l xnsinformers.SimpleLister, s labels.Selector) (res []*v1.Endpoints, err error) {
-	objects, err := l.List(s)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, obj := range objects {
-		out := &v1.Endpoints{}
-		if err := xnsinformers.ConvertUnstructured(obj, out); err != nil {
-			return nil, err
-		}
-
-		res = append(res, out)
-	}
-
-	return res, nil
+	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.Endpoints{})
+	return listers.NewEndpointsLister(idx)
 }

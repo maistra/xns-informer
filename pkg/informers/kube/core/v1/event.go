@@ -10,21 +10,21 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type podInformer struct {
+type eventInformer struct {
 	factory xnsinformers.InformerFactory
 }
 
-var _ informers.PodInformer = &podInformer{}
+var _ informers.EventInformer = &eventInformer{}
 
-func (f *podInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("pods")
+func (f *eventInformer) resource() schema.GroupVersionResource {
+	return v1.SchemeGroupVersion.WithResource("events")
 }
 
-func (f *podInformer) Informer() cache.SharedIndexInformer {
+func (f *eventInformer) Informer() cache.SharedIndexInformer {
 	return f.factory.NamespacedResource(f.resource()).Informer()
 }
 
-func (f *podInformer) Lister() listers.PodLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.Pod{})
-	return listers.NewPodLister(idx)
+func (f *eventInformer) Lister() listers.EventLister {
+	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.Event{})
+	return listers.NewEventLister(idx)
 }

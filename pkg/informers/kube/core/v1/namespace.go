@@ -4,7 +4,6 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
@@ -26,47 +25,6 @@ func (f *namespaceInformer) Informer() cache.SharedIndexInformer {
 }
 
 func (f *namespaceInformer) Lister() listers.NamespaceLister {
-	return &namespaceLister{lister: f.factory.ClusterResource(f.resource()).Lister()}
-}
-
-type namespaceLister struct {
-	lister cache.GenericLister
-}
-
-var _ listers.NamespaceLister = &namespaceLister{}
-
-func (l *namespaceLister) List(selector labels.Selector) (res []*v1.Namespace, err error) {
-	return listNamespace(l.lister, selector)
-}
-
-func (l *namespaceLister) Get(name string) (*v1.Namespace, error) {
-	obj, err := l.lister.Get(name)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &v1.Namespace{}
-	if err := xnsinformers.ConvertUnstructured(obj, out); err != nil {
-		return nil, err
-	}
-
-	return out, nil
-}
-
-func listNamespace(l xnsinformers.SimpleLister, s labels.Selector) (res []*v1.Namespace, err error) {
-	objects, err := l.List(s)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, obj := range objects {
-		out := &v1.Namespace{}
-		if err := xnsinformers.ConvertUnstructured(obj, out); err != nil {
-			return nil, err
-		}
-
-		res = append(res, out)
-	}
-
-	return res, nil
+	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.Namespace{})
+	return listers.NewNamespaceLister(idx)
 }
