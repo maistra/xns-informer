@@ -15,7 +15,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type InformerFactory interface {
+// SharedInformerFactory provides shared informers for any resource type and
+// works across a set of namespaces, which can be updated at any time.
+type SharedInformerFactory interface {
 	Start(stopCh <-chan struct{})
 	ClusterResource(resource schema.GroupVersionResource) informers.GenericInformer
 	NamespacedResource(resource schema.GroupVersionResource) informers.GenericInformer
@@ -35,10 +37,10 @@ type multiNamespaceInformerFactory struct {
 	informers map[schema.GroupVersionResource]*multiNamespaceGenericInformer
 }
 
-var _ InformerFactory = &multiNamespaceInformerFactory{}
+var _ SharedInformerFactory = &multiNamespaceInformerFactory{}
 
-// NewInformerFactory returns a new factory for the given namespaces.
-func NewInformerFactory(client dynamic.Interface, resync time.Duration, namespaces []string) (InformerFactory, error) {
+// NewSharedInformerFactory returns a new informer factory for the given namespaces.
+func NewSharedInformerFactory(client dynamic.Interface, resync time.Duration, namespaces []string) (SharedInformerFactory, error) {
 	if len(namespaces) < 1 {
 		return nil, errors.New("must provide at least one namespace")
 	}

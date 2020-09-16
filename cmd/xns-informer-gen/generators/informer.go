@@ -53,7 +53,7 @@ func (g *listerGenerator) GenerateType(c *generator.Context, t *types.Type, w io
 
 var typedInformer = `
 type $.type|private$Informer struct {
-	factory xnsinformers.InformerFactory
+	factory xnsinformers.SharedInformerFactory
 }
 
 var _ informers.$.type|public$Informer = &$.type|private$Informer{}

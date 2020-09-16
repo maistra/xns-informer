@@ -41,10 +41,10 @@ $- end$
 }
 
 type version struct {
-    factory xnsinformers.InformerFactory
+    factory xnsinformers.SharedInformerFactory
 }
 
-func New(factory xnsinformers.InformerFactory) Interface {
+func New(factory xnsinformers.SharedInformerFactory) Interface {
   return &version{factory: factory}
 }
 
