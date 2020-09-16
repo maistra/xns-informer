@@ -11,8 +11,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 
+	kubeinformers "github.com/maistra/xns-informer/pkg/generated/kube"
 	xnsinfomers "github.com/maistra/xns-informer/pkg/informers"
-	kubeinformers "github.com/maistra/xns-informer/pkg/informers/kube"
 )
 
 func main() {
@@ -38,12 +38,12 @@ func main() {
 	namespaces := os.Args[1:]
 	log.Printf("Creating informer for namespaces: %v", namespaces)
 
-	factory, err := xnsinfomers.NewInformerFactory(client, resync, namespaces)
+	factory, err := xnsinfomers.NewSharedInformerFactory(client, resync, namespaces)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	kubeInformerFactory := kubeinformers.NewKubeInformerFactory(factory)
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(factory)
 	cmInformer := kubeInformerFactory.Core().V1().ConfigMaps()
 
 	cmInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
