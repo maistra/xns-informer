@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -119,13 +120,12 @@ func (c *cacheReader) Get(obj interface{}) (item interface{}, exists bool, err e
 	}
 
 	namespace := accessor.GetNamespace()
-	indexers := c.informer.getIndexers()
-
-	if _, ok := indexers[namespace]; !ok {
+	idx, ok := c.indexerForNamespace(namespace)
+	if !ok {
 		return nil, false, nil // TODO: Should this return an error?
 	}
 
-	return indexers[namespace].Get(obj)
+	return idx.Get(obj)
 }
 
 func (c *cacheReader) GetByKey(key string) (item interface{}, exists bool, err error) {
@@ -134,12 +134,12 @@ func (c *cacheReader) GetByKey(key string) (item interface{}, exists bool, err e
 		return nil, false, err
 	}
 
-	indexers := c.informer.getIndexers()
-	if _, ok := indexers[namespace]; !ok {
+	idx, ok := c.indexerForNamespace(namespace)
+	if !ok {
 		return nil, false, nil // TODO: Should this return an error?
 	}
 
-	return indexers[namespace].GetByKey(key)
+	return idx.GetByKey(key)
 }
 
 func (c *cacheReader) Replace(list []interface{}, resourceVersion string) error {
@@ -148,4 +148,16 @@ func (c *cacheReader) Replace(list []interface{}, resourceVersion string) error 
 
 func (c *cacheReader) Resync() error {
 	return nil
+}
+
+func (c *cacheReader) indexerForNamespace(namespace string) (cache.Indexer, bool) {
+	indexers := c.informer.getIndexers()
+
+	if idx, ok := indexers[metav1.NamespaceAll]; ok {
+		return idx, true
+	} else if idx, ok := indexers[namespace]; ok {
+		return idx, true
+	}
+
+	return nil, false
 }
