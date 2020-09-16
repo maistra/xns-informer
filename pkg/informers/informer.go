@@ -7,6 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog"
 )
 
 type NewInformerFunc func(namespace string) informers.GenericInformer
@@ -20,10 +21,12 @@ type multiNamespaceGenericInformer struct {
 
 var _ informers.GenericInformer = &multiNamespaceGenericInformer{}
 
+// Informer returns the cache.SharedIndexInformer for this informer.
 func (i *multiNamespaceGenericInformer) Informer() cache.SharedIndexInformer {
 	return i.informer
 }
 
+// Lister returns the cache.GenericLister for this informer.
 func (i *multiNamespaceGenericInformer) Lister() cache.GenericLister {
 	return i.lister
 }
@@ -47,6 +50,7 @@ type eventHandlerData struct {
 // methods are actually usable.
 type multiNamespaceInformer struct {
 	informers     map[string]*informerData
+	errorHandler  cache.WatchErrorHandler
 	eventHandlers []eventHandlerData
 	indexers      []cache.Indexers
 	resyncPeriod  time.Duration
@@ -85,24 +89,44 @@ func NewMultiNamespaceInformer(namespaced bool, resync time.Duration, newInforme
 	return informer
 }
 
+// GetController is unimplemented and always returns nil.
 func (i *multiNamespaceInformer) GetController() cache.Controller {
-	panic("not implemented")
+	return nil
 }
 
+// GetStore returns a new cache.Store providing read-only access to the
+// informer's underlying per-namespace caches.
 func (i *multiNamespaceInformer) GetStore() cache.Store {
 	return NewCacheReader(i)
 }
 
+// GetIndexer returns a new cache.Indexer providing read-only access to the
+// informer's underlying per-namespace caches.
 func (i *multiNamespaceInformer) GetIndexer() cache.Indexer {
 	return NewCacheReader(i)
 }
 
+// LastSyncResourceVersion always returns an empty string at the moment.
 func (i *multiNamespaceInformer) LastSyncResourceVersion() string {
-	panic("not implemented")
+	return "" // TODO: What's the most correct thing here?
 }
 
+// SetWatchErrorHandler sets the error handler for the informer's underlying
+// watches.  The handler will also be added for any new namespaces added later.
+// This must be called before the first time the informer is started.
 func (i *multiNamespaceInformer) SetWatchErrorHandler(handler cache.WatchErrorHandler) error {
-	panic("not implemented") // TODO: This could probably be implemented.
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	i.errorHandler = handler
+
+	for _, informer := range i.informers {
+		if err := informer.informer.SetWatchErrorHandler(handler); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // AddNamespace adds the given namespace to the informer.  This is a no-op if an
@@ -121,23 +145,31 @@ func (i *multiNamespaceInformer) AddNamespace(namespace string) {
 
 	informer := i.newInformer(namespace)
 
-	i.informers[namespace] = &informerData{
-		informer: informer.Informer(),
-		lister:   informer.Lister(),
-		stopCh:   make(chan struct{}),
-	}
-
 	// Add indexers to the new informer.
 	for _, idx := range i.indexers {
-		i.informers[namespace].informer.AddIndexers(idx)
+		informer.Informer().AddIndexers(idx)
 	}
 
 	// Add event handlers to the new informer.
 	for _, handler := range i.eventHandlers {
-		i.informers[namespace].informer.AddEventHandlerWithResyncPeriod(
+		informer.Informer().AddEventHandlerWithResyncPeriod(
 			handler.handler,
 			handler.resyncPeriod,
 		)
+	}
+
+	// Add watch error handler.
+	if i.errorHandler != nil {
+		if err := informer.Informer().SetWatchErrorHandler(i.errorHandler); err != nil {
+			klog.Errorf("Failed to set watch error handler for namespace %q: %v",
+				namespace, err)
+		}
+	}
+
+	i.informers[namespace] = &informerData{
+		informer: informer.Informer(),
+		lister:   informer.Lister(),
+		stopCh:   make(chan struct{}),
 	}
 }
 
