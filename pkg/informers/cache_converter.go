@@ -34,7 +34,7 @@ func NewCacheConverter(idx cache.Indexer, obj runtime.Object) *cacheConverter {
 func (c *cacheConverter) Add(obj interface{}) error {
 	unstructuredObj, err := c.converter.ToUnstructured(obj)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return c.indexer.Add(&unstructured.Unstructured{Object: unstructuredObj})
@@ -43,7 +43,7 @@ func (c *cacheConverter) Add(obj interface{}) error {
 func (c *cacheConverter) Update(obj interface{}) error {
 	unstructuredObj, err := c.converter.ToUnstructured(obj)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return c.indexer.Update(&unstructured.Unstructured{Object: unstructuredObj})
@@ -52,7 +52,7 @@ func (c *cacheConverter) Update(obj interface{}) error {
 func (c *cacheConverter) Delete(obj interface{}) error {
 	unstructuredObj, err := c.converter.ToUnstructured(obj)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return c.indexer.Delete(&unstructured.Unstructured{Object: unstructuredObj})
