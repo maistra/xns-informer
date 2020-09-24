@@ -53,25 +53,29 @@ func (g *listerGenerator) GenerateType(c *generator.Context, t *types.Type, w io
 
 var typedInformer = `
 type $.type|private$Informer struct {
-	factory xnsinformers.SharedInformerFactory
+    informer cache.SharedIndexInformer
 }
 
 var _ informers.$.type|public$Informer = &$.type|private$Informer{}
 
-func (f *$.type|private$Informer) resource() schema.GroupVersionResource {
-	return $.version$.SchemeGroupVersion.WithResource("$.type|allLowercasePlural$")
-}
-
-func (f *$.type|private$Informer) Informer() cache.SharedIndexInformer {
+func New$.type|public$Informer(f xnsinformers.SharedInformerFactory) informers.$.type|public$Informer {
+    resource := $.version$.SchemeGroupVersion.WithResource("$.type|allLowercasePlural$")
 $- if .namespaced$
-	return f.factory.NamespacedResource(f.resource()).Informer()
+	informer := f.NamespacedResource(resource).Informer()
 $- else$
-    return f.factory.ClusterResource(f.resource()).Informer()
+    informer := f.ClusterResource(resource).Informer()
 $- end$
+
+    return &$.type|private$Informer{
+        informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &$.version$.$.type|public${}),
+    }
 }
 
-func (f *$.type|private$Informer) Lister() listers.$.type|public$Lister {
-    idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &$.version$.$.type|public${})
-    return listers.New$.type|public$Lister(idx)
+func (i *$.type|private$Informer) Informer() cache.SharedIndexInformer {
+    return i.informer
+}
+
+func (i *$.type|private$Informer) Lister() listers.$.type|public$Lister {
+    return listers.New$.type|public$Lister(i.informer.GetIndexer())
 }
 `

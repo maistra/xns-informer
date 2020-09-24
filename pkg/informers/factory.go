@@ -7,11 +7,13 @@ import (
 
 	"github.com/maistra/xns-informer/pkg/internal/sets"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/dynamic/dynamiclister"
 	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -23,12 +25,14 @@ type SharedInformerFactory interface {
 	NamespacedResource(resource schema.GroupVersionResource) informers.GenericInformer
 	WaitForCacheSync(stopCh <-chan struct{})
 	SetNamespaces(namespaces []string)
+	GetScheme() *runtime.Scheme
 }
 
 // multiNamespaceInformerFactory provides a dynamic informer factory that
 // creates informers which track changes across a set of namespaces.
 type multiNamespaceInformerFactory struct {
 	client       dynamic.Interface
+	scheme       *runtime.Scheme
 	resyncPeriod time.Duration
 	lock         sync.Mutex
 	namespaces   sets.Set
@@ -47,6 +51,7 @@ func NewSharedInformerFactory(client dynamic.Interface, resync time.Duration, na
 
 	factory := &multiNamespaceInformerFactory{
 		client:       client,
+		scheme:       scheme.Scheme, // TODO: This should be configuable.
 		resyncPeriod: resync,
 		informers:    make(map[schema.GroupVersionResource]*multiNamespaceGenericInformer),
 	}
@@ -54,6 +59,11 @@ func NewSharedInformerFactory(client dynamic.Interface, resync time.Duration, na
 	factory.SetNamespaces(namespaces)
 
 	return factory, nil
+}
+
+// GetScheme returns the factory's runtime.Scheme.
+func (f *multiNamespaceInformerFactory) GetScheme() *runtime.Scheme {
+	return f.scheme
 }
 
 // SetNamespaces sets the list of namespaces the factory and its informers

@@ -50,7 +50,7 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 
 $- range .types$
 func (v *version) $.|publicPlural$() informers.$.|public$Informer {
-    return &$.|private$Informer{factory: v.factory}
+    return New$.|public$Informer(v.factory)
 }
 $- end$
 `
