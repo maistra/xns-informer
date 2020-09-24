@@ -19,5 +19,5 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) RuntimeClasses() informers.RuntimeClassInformer {
-	return &runtimeClassInformer{factory: v.factory}
+	return NewRuntimeClassInformer(v.factory)
 }

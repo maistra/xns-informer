@@ -5,27 +5,30 @@ package v1alpha1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/node/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/node/v1alpha1"
 	listers "k8s.io/client-go/listers/node/v1alpha1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type runtimeClassInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.RuntimeClassInformer = &runtimeClassInformer{}
 
-func (f *runtimeClassInformer) resource() schema.GroupVersionResource {
-	return v1alpha1.SchemeGroupVersion.WithResource("runtimeclasses")
+func NewRuntimeClassInformer(f xnsinformers.SharedInformerFactory) informers.RuntimeClassInformer {
+	resource := v1alpha1.SchemeGroupVersion.WithResource("runtimeclasses")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &runtimeClassInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.RuntimeClass{}),
+	}
 }
 
-func (f *runtimeClassInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *runtimeClassInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *runtimeClassInformer) Lister() listers.RuntimeClassLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1alpha1.RuntimeClass{})
-	return listers.NewRuntimeClassLister(idx)
+func (i *runtimeClassInformer) Lister() listers.RuntimeClassLister {
+	return listers.NewRuntimeClassLister(i.informer.GetIndexer())
 }

@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type persistentVolumeClaimInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.PersistentVolumeClaimInformer = &persistentVolumeClaimInformer{}
 
-func (f *persistentVolumeClaimInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("persistentvolumeclaims")
+func NewPersistentVolumeClaimInformer(f xnsinformers.SharedInformerFactory) informers.PersistentVolumeClaimInformer {
+	resource := v1.SchemeGroupVersion.WithResource("persistentvolumeclaims")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &persistentVolumeClaimInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.PersistentVolumeClaim{}),
+	}
 }
 
-func (f *persistentVolumeClaimInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *persistentVolumeClaimInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *persistentVolumeClaimInformer) Lister() listers.PersistentVolumeClaimLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.PersistentVolumeClaim{})
-	return listers.NewPersistentVolumeClaimLister(idx)
+func (i *persistentVolumeClaimInformer) Lister() listers.PersistentVolumeClaimLister {
+	return listers.NewPersistentVolumeClaimLister(i.informer.GetIndexer())
 }

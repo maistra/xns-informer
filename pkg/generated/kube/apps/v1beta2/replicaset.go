@@ -5,27 +5,30 @@ package v1beta2
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/apps/v1beta2"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/apps/v1beta2"
 	listers "k8s.io/client-go/listers/apps/v1beta2"
 	"k8s.io/client-go/tools/cache"
 )
 
 type replicaSetInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.ReplicaSetInformer = &replicaSetInformer{}
 
-func (f *replicaSetInformer) resource() schema.GroupVersionResource {
-	return v1beta2.SchemeGroupVersion.WithResource("replicasets")
+func NewReplicaSetInformer(f xnsinformers.SharedInformerFactory) informers.ReplicaSetInformer {
+	resource := v1beta2.SchemeGroupVersion.WithResource("replicasets")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &replicaSetInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta2.ReplicaSet{}),
+	}
 }
 
-func (f *replicaSetInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *replicaSetInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *replicaSetInformer) Lister() listers.ReplicaSetLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta2.ReplicaSet{})
-	return listers.NewReplicaSetLister(idx)
+func (i *replicaSetInformer) Lister() listers.ReplicaSetLister {
+	return listers.NewReplicaSetLister(i.informer.GetIndexer())
 }

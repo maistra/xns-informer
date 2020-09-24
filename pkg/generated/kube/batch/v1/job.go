@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/batch/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/batch/v1"
 	listers "k8s.io/client-go/listers/batch/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type jobInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.JobInformer = &jobInformer{}
 
-func (f *jobInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("jobs")
+func NewJobInformer(f xnsinformers.SharedInformerFactory) informers.JobInformer {
+	resource := v1.SchemeGroupVersion.WithResource("jobs")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &jobInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Job{}),
+	}
 }
 
-func (f *jobInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *jobInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *jobInformer) Lister() listers.JobLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.Job{})
-	return listers.NewJobLister(idx)
+func (i *jobInformer) Lister() listers.JobLister {
+	return listers.NewJobLister(i.informer.GetIndexer())
 }

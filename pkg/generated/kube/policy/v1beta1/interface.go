@@ -20,8 +20,8 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) PodDisruptionBudgets() informers.PodDisruptionBudgetInformer {
-	return &podDisruptionBudgetInformer{factory: v.factory}
+	return NewPodDisruptionBudgetInformer(v.factory)
 }
 func (v *version) PodSecurityPolicies() informers.PodSecurityPolicyInformer {
-	return &podSecurityPolicyInformer{factory: v.factory}
+	return NewPodSecurityPolicyInformer(v.factory)
 }

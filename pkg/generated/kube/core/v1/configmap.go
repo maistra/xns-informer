@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type configMapInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.ConfigMapInformer = &configMapInformer{}
 
-func (f *configMapInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("configmaps")
+func NewConfigMapInformer(f xnsinformers.SharedInformerFactory) informers.ConfigMapInformer {
+	resource := v1.SchemeGroupVersion.WithResource("configmaps")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &configMapInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.ConfigMap{}),
+	}
 }
 
-func (f *configMapInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *configMapInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *configMapInformer) Lister() listers.ConfigMapLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.ConfigMap{})
-	return listers.NewConfigMapLister(idx)
+func (i *configMapInformer) Lister() listers.ConfigMapLister {
+	return listers.NewConfigMapLister(i.informer.GetIndexer())
 }

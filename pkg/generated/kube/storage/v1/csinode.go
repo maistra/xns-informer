@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/storage/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/storage/v1"
 	listers "k8s.io/client-go/listers/storage/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type cSINodeInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.CSINodeInformer = &cSINodeInformer{}
 
-func (f *cSINodeInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("csinodes")
+func NewCSINodeInformer(f xnsinformers.SharedInformerFactory) informers.CSINodeInformer {
+	resource := v1.SchemeGroupVersion.WithResource("csinodes")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &cSINodeInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.CSINode{}),
+	}
 }
 
-func (f *cSINodeInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *cSINodeInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *cSINodeInformer) Lister() listers.CSINodeLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.CSINode{})
-	return listers.NewCSINodeLister(idx)
+func (i *cSINodeInformer) Lister() listers.CSINodeLister {
+	return listers.NewCSINodeLister(i.informer.GetIndexer())
 }

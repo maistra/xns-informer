@@ -5,27 +5,30 @@ package v1beta1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/batch/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/batch/v1beta1"
 	listers "k8s.io/client-go/listers/batch/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type cronJobInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.CronJobInformer = &cronJobInformer{}
 
-func (f *cronJobInformer) resource() schema.GroupVersionResource {
-	return v1beta1.SchemeGroupVersion.WithResource("cronjobs")
+func NewCronJobInformer(f xnsinformers.SharedInformerFactory) informers.CronJobInformer {
+	resource := v1beta1.SchemeGroupVersion.WithResource("cronjobs")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &cronJobInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.CronJob{}),
+	}
 }
 
-func (f *cronJobInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *cronJobInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *cronJobInformer) Lister() listers.CronJobLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta1.CronJob{})
-	return listers.NewCronJobLister(idx)
+func (i *cronJobInformer) Lister() listers.CronJobLister {
+	return listers.NewCronJobLister(i.informer.GetIndexer())
 }

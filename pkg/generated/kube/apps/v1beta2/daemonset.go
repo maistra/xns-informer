@@ -5,27 +5,30 @@ package v1beta2
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/apps/v1beta2"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/apps/v1beta2"
 	listers "k8s.io/client-go/listers/apps/v1beta2"
 	"k8s.io/client-go/tools/cache"
 )
 
 type daemonSetInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.DaemonSetInformer = &daemonSetInformer{}
 
-func (f *daemonSetInformer) resource() schema.GroupVersionResource {
-	return v1beta2.SchemeGroupVersion.WithResource("daemonsets")
+func NewDaemonSetInformer(f xnsinformers.SharedInformerFactory) informers.DaemonSetInformer {
+	resource := v1beta2.SchemeGroupVersion.WithResource("daemonsets")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &daemonSetInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta2.DaemonSet{}),
+	}
 }
 
-func (f *daemonSetInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *daemonSetInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *daemonSetInformer) Lister() listers.DaemonSetLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta2.DaemonSet{})
-	return listers.NewDaemonSetLister(idx)
+func (i *daemonSetInformer) Lister() listers.DaemonSetLister {
+	return listers.NewDaemonSetLister(i.informer.GetIndexer())
 }

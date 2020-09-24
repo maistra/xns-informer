@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type endpointsInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.EndpointsInformer = &endpointsInformer{}
 
-func (f *endpointsInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("endpoints")
+func NewEndpointsInformer(f xnsinformers.SharedInformerFactory) informers.EndpointsInformer {
+	resource := v1.SchemeGroupVersion.WithResource("endpoints")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &endpointsInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Endpoints{}),
+	}
 }
 
-func (f *endpointsInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *endpointsInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *endpointsInformer) Lister() listers.EndpointsLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.Endpoints{})
-	return listers.NewEndpointsLister(idx)
+func (i *endpointsInformer) Lister() listers.EndpointsLister {
+	return listers.NewEndpointsLister(i.informer.GetIndexer())
 }

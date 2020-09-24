@@ -19,5 +19,5 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) EndpointSlices() informers.EndpointSliceInformer {
-	return &endpointSliceInformer{factory: v.factory}
+	return NewEndpointSliceInformer(v.factory)
 }

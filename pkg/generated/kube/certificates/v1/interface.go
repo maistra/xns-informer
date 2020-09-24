@@ -19,5 +19,5 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) CertificateSigningRequests() informers.CertificateSigningRequestInformer {
-	return &certificateSigningRequestInformer{factory: v.factory}
+	return NewCertificateSigningRequestInformer(v.factory)
 }

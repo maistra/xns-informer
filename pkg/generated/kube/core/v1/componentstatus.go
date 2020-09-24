@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type componentStatusInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.ComponentStatusInformer = &componentStatusInformer{}
 
-func (f *componentStatusInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("componentstatuses")
+func NewComponentStatusInformer(f xnsinformers.SharedInformerFactory) informers.ComponentStatusInformer {
+	resource := v1.SchemeGroupVersion.WithResource("componentstatuses")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &componentStatusInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.ComponentStatus{}),
+	}
 }
 
-func (f *componentStatusInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *componentStatusInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *componentStatusInformer) Lister() listers.ComponentStatusLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.ComponentStatus{})
-	return listers.NewComponentStatusLister(idx)
+func (i *componentStatusInformer) Lister() listers.ComponentStatusLister {
+	return listers.NewComponentStatusLister(i.informer.GetIndexer())
 }

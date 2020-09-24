@@ -5,27 +5,30 @@ package v1alpha1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/storage/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/storage/v1alpha1"
 	listers "k8s.io/client-go/listers/storage/v1alpha1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type volumeAttachmentInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.VolumeAttachmentInformer = &volumeAttachmentInformer{}
 
-func (f *volumeAttachmentInformer) resource() schema.GroupVersionResource {
-	return v1alpha1.SchemeGroupVersion.WithResource("volumeattachments")
+func NewVolumeAttachmentInformer(f xnsinformers.SharedInformerFactory) informers.VolumeAttachmentInformer {
+	resource := v1alpha1.SchemeGroupVersion.WithResource("volumeattachments")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &volumeAttachmentInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.VolumeAttachment{}),
+	}
 }
 
-func (f *volumeAttachmentInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *volumeAttachmentInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *volumeAttachmentInformer) Lister() listers.VolumeAttachmentLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1alpha1.VolumeAttachment{})
-	return listers.NewVolumeAttachmentLister(idx)
+func (i *volumeAttachmentInformer) Lister() listers.VolumeAttachmentLister {
+	return listers.NewVolumeAttachmentLister(i.informer.GetIndexer())
 }

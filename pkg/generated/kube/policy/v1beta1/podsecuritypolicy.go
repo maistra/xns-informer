@@ -5,27 +5,30 @@ package v1beta1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/policy/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/policy/v1beta1"
 	listers "k8s.io/client-go/listers/policy/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type podSecurityPolicyInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.PodSecurityPolicyInformer = &podSecurityPolicyInformer{}
 
-func (f *podSecurityPolicyInformer) resource() schema.GroupVersionResource {
-	return v1beta1.SchemeGroupVersion.WithResource("podsecuritypolicies")
+func NewPodSecurityPolicyInformer(f xnsinformers.SharedInformerFactory) informers.PodSecurityPolicyInformer {
+	resource := v1beta1.SchemeGroupVersion.WithResource("podsecuritypolicies")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &podSecurityPolicyInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.PodSecurityPolicy{}),
+	}
 }
 
-func (f *podSecurityPolicyInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *podSecurityPolicyInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *podSecurityPolicyInformer) Lister() listers.PodSecurityPolicyLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta1.PodSecurityPolicy{})
-	return listers.NewPodSecurityPolicyLister(idx)
+func (i *podSecurityPolicyInformer) Lister() listers.PodSecurityPolicyLister {
+	return listers.NewPodSecurityPolicyLister(i.informer.GetIndexer())
 }

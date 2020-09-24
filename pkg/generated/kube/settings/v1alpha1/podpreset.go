@@ -5,27 +5,30 @@ package v1alpha1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/settings/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/settings/v1alpha1"
 	listers "k8s.io/client-go/listers/settings/v1alpha1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type podPresetInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.PodPresetInformer = &podPresetInformer{}
 
-func (f *podPresetInformer) resource() schema.GroupVersionResource {
-	return v1alpha1.SchemeGroupVersion.WithResource("podpresets")
+func NewPodPresetInformer(f xnsinformers.SharedInformerFactory) informers.PodPresetInformer {
+	resource := v1alpha1.SchemeGroupVersion.WithResource("podpresets")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &podPresetInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.PodPreset{}),
+	}
 }
 
-func (f *podPresetInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *podPresetInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *podPresetInformer) Lister() listers.PodPresetLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1alpha1.PodPreset{})
-	return listers.NewPodPresetLister(idx)
+func (i *podPresetInformer) Lister() listers.PodPresetLister {
+	return listers.NewPodPresetLister(i.informer.GetIndexer())
 }

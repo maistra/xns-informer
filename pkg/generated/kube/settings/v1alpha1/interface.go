@@ -19,5 +19,5 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) PodPresets() informers.PodPresetInformer {
-	return &podPresetInformer{factory: v.factory}
+	return NewPodPresetInformer(v.factory)
 }

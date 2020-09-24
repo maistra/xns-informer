@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type persistentVolumeInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.PersistentVolumeInformer = &persistentVolumeInformer{}
 
-func (f *persistentVolumeInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("persistentvolumes")
+func NewPersistentVolumeInformer(f xnsinformers.SharedInformerFactory) informers.PersistentVolumeInformer {
+	resource := v1.SchemeGroupVersion.WithResource("persistentvolumes")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &persistentVolumeInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.PersistentVolume{}),
+	}
 }
 
-func (f *persistentVolumeInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *persistentVolumeInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *persistentVolumeInformer) Lister() listers.PersistentVolumeLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.PersistentVolume{})
-	return listers.NewPersistentVolumeLister(idx)
+func (i *persistentVolumeInformer) Lister() listers.PersistentVolumeLister {
+	return listers.NewPersistentVolumeLister(i.informer.GetIndexer())
 }

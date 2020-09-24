@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type nodeInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.NodeInformer = &nodeInformer{}
 
-func (f *nodeInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("nodes")
+func NewNodeInformer(f xnsinformers.SharedInformerFactory) informers.NodeInformer {
+	resource := v1.SchemeGroupVersion.WithResource("nodes")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &nodeInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Node{}),
+	}
 }
 
-func (f *nodeInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *nodeInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *nodeInformer) Lister() listers.NodeLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.Node{})
-	return listers.NewNodeLister(idx)
+func (i *nodeInformer) Lister() listers.NodeLister {
+	return listers.NewNodeLister(i.informer.GetIndexer())
 }

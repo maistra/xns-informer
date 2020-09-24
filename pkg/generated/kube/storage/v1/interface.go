@@ -22,14 +22,14 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) CSIDrivers() informers.CSIDriverInformer {
-	return &cSIDriverInformer{factory: v.factory}
+	return NewCSIDriverInformer(v.factory)
 }
 func (v *version) CSINodes() informers.CSINodeInformer {
-	return &cSINodeInformer{factory: v.factory}
+	return NewCSINodeInformer(v.factory)
 }
 func (v *version) StorageClasses() informers.StorageClassInformer {
-	return &storageClassInformer{factory: v.factory}
+	return NewStorageClassInformer(v.factory)
 }
 func (v *version) VolumeAttachments() informers.VolumeAttachmentInformer {
-	return &volumeAttachmentInformer{factory: v.factory}
+	return NewVolumeAttachmentInformer(v.factory)
 }

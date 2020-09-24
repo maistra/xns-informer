@@ -19,5 +19,5 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) Jobs() informers.JobInformer {
-	return &jobInformer{factory: v.factory}
+	return NewJobInformer(v.factory)
 }

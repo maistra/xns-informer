@@ -5,27 +5,30 @@ package v1beta1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/storage/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/storage/v1beta1"
 	listers "k8s.io/client-go/listers/storage/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type cSIDriverInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.CSIDriverInformer = &cSIDriverInformer{}
 
-func (f *cSIDriverInformer) resource() schema.GroupVersionResource {
-	return v1beta1.SchemeGroupVersion.WithResource("csidrivers")
+func NewCSIDriverInformer(f xnsinformers.SharedInformerFactory) informers.CSIDriverInformer {
+	resource := v1beta1.SchemeGroupVersion.WithResource("csidrivers")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &cSIDriverInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.CSIDriver{}),
+	}
 }
 
-func (f *cSIDriverInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *cSIDriverInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *cSIDriverInformer) Lister() listers.CSIDriverLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta1.CSIDriver{})
-	return listers.NewCSIDriverLister(idx)
+func (i *cSIDriverInformer) Lister() listers.CSIDriverLister {
+	return listers.NewCSIDriverLister(i.informer.GetIndexer())
 }

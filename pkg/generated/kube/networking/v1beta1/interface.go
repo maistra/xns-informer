@@ -20,8 +20,8 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) Ingresses() informers.IngressInformer {
-	return &ingressInformer{factory: v.factory}
+	return NewIngressInformer(v.factory)
 }
 func (v *version) IngressClasses() informers.IngressClassInformer {
-	return &ingressClassInformer{factory: v.factory}
+	return NewIngressClassInformer(v.factory)
 }

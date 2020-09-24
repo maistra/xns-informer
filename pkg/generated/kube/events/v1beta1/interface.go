@@ -19,5 +19,5 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) Events() informers.EventInformer {
-	return &eventInformer{factory: v.factory}
+	return NewEventInformer(v.factory)
 }

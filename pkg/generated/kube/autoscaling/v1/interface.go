@@ -19,5 +19,5 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) HorizontalPodAutoscalers() informers.HorizontalPodAutoscalerInformer {
-	return &horizontalPodAutoscalerInformer{factory: v.factory}
+	return NewHorizontalPodAutoscalerInformer(v.factory)
 }

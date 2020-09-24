@@ -23,17 +23,17 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) ControllerRevisions() informers.ControllerRevisionInformer {
-	return &controllerRevisionInformer{factory: v.factory}
+	return NewControllerRevisionInformer(v.factory)
 }
 func (v *version) DaemonSets() informers.DaemonSetInformer {
-	return &daemonSetInformer{factory: v.factory}
+	return NewDaemonSetInformer(v.factory)
 }
 func (v *version) Deployments() informers.DeploymentInformer {
-	return &deploymentInformer{factory: v.factory}
+	return NewDeploymentInformer(v.factory)
 }
 func (v *version) ReplicaSets() informers.ReplicaSetInformer {
-	return &replicaSetInformer{factory: v.factory}
+	return NewReplicaSetInformer(v.factory)
 }
 func (v *version) StatefulSets() informers.StatefulSetInformer {
-	return &statefulSetInformer{factory: v.factory}
+	return NewStatefulSetInformer(v.factory)
 }

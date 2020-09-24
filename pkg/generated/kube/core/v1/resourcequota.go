@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type resourceQuotaInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.ResourceQuotaInformer = &resourceQuotaInformer{}
 
-func (f *resourceQuotaInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("resourcequotas")
+func NewResourceQuotaInformer(f xnsinformers.SharedInformerFactory) informers.ResourceQuotaInformer {
+	resource := v1.SchemeGroupVersion.WithResource("resourcequotas")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &resourceQuotaInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.ResourceQuota{}),
+	}
 }
 
-func (f *resourceQuotaInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *resourceQuotaInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *resourceQuotaInformer) Lister() listers.ResourceQuotaLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.ResourceQuota{})
-	return listers.NewResourceQuotaLister(idx)
+func (i *resourceQuotaInformer) Lister() listers.ResourceQuotaLister {
+	return listers.NewResourceQuotaLister(i.informer.GetIndexer())
 }

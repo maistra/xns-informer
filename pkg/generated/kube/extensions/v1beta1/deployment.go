@@ -5,27 +5,30 @@ package v1beta1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/apps/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/extensions/v1beta1"
 	listers "k8s.io/client-go/listers/extensions/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type deploymentInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.DeploymentInformer = &deploymentInformer{}
 
-func (f *deploymentInformer) resource() schema.GroupVersionResource {
-	return v1beta1.SchemeGroupVersion.WithResource("deployments")
+func NewDeploymentInformer(f xnsinformers.SharedInformerFactory) informers.DeploymentInformer {
+	resource := v1beta1.SchemeGroupVersion.WithResource("deployments")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &deploymentInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.Deployment{}),
+	}
 }
 
-func (f *deploymentInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *deploymentInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *deploymentInformer) Lister() listers.DeploymentLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta1.Deployment{})
-	return listers.NewDeploymentLister(idx)
+func (i *deploymentInformer) Lister() listers.DeploymentLister {
+	return listers.NewDeploymentLister(i.informer.GetIndexer())
 }

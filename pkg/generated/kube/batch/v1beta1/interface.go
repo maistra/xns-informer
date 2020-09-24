@@ -19,5 +19,5 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) CronJobs() informers.CronJobInformer {
-	return &cronJobInformer{factory: v.factory}
+	return NewCronJobInformer(v.factory)
 }

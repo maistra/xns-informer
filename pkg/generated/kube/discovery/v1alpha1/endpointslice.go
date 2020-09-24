@@ -5,27 +5,30 @@ package v1alpha1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/discovery/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/discovery/v1alpha1"
 	listers "k8s.io/client-go/listers/discovery/v1alpha1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type endpointSliceInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.EndpointSliceInformer = &endpointSliceInformer{}
 
-func (f *endpointSliceInformer) resource() schema.GroupVersionResource {
-	return v1alpha1.SchemeGroupVersion.WithResource("endpointslices")
+func NewEndpointSliceInformer(f xnsinformers.SharedInformerFactory) informers.EndpointSliceInformer {
+	resource := v1alpha1.SchemeGroupVersion.WithResource("endpointslices")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &endpointSliceInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.EndpointSlice{}),
+	}
 }
 
-func (f *endpointSliceInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *endpointSliceInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *endpointSliceInformer) Lister() listers.EndpointSliceLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1alpha1.EndpointSlice{})
-	return listers.NewEndpointSliceLister(idx)
+func (i *endpointSliceInformer) Lister() listers.EndpointSliceLister {
+	return listers.NewEndpointSliceLister(i.informer.GetIndexer())
 }

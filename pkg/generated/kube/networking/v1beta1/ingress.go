@@ -5,27 +5,30 @@ package v1beta1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/extensions/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/networking/v1beta1"
 	listers "k8s.io/client-go/listers/networking/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type ingressInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.IngressInformer = &ingressInformer{}
 
-func (f *ingressInformer) resource() schema.GroupVersionResource {
-	return v1beta1.SchemeGroupVersion.WithResource("ingresses")
+func NewIngressInformer(f xnsinformers.SharedInformerFactory) informers.IngressInformer {
+	resource := v1beta1.SchemeGroupVersion.WithResource("ingresses")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &ingressInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.Ingress{}),
+	}
 }
 
-func (f *ingressInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *ingressInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *ingressInformer) Lister() listers.IngressLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta1.Ingress{})
-	return listers.NewIngressLister(idx)
+func (i *ingressInformer) Lister() listers.IngressLister {
+	return listers.NewIngressLister(i.informer.GetIndexer())
 }

@@ -5,27 +5,30 @@ package v1beta1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/certificates/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/certificates/v1beta1"
 	listers "k8s.io/client-go/listers/certificates/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type certificateSigningRequestInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.CertificateSigningRequestInformer = &certificateSigningRequestInformer{}
 
-func (f *certificateSigningRequestInformer) resource() schema.GroupVersionResource {
-	return v1beta1.SchemeGroupVersion.WithResource("certificatesigningrequests")
+func NewCertificateSigningRequestInformer(f xnsinformers.SharedInformerFactory) informers.CertificateSigningRequestInformer {
+	resource := v1beta1.SchemeGroupVersion.WithResource("certificatesigningrequests")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &certificateSigningRequestInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.CertificateSigningRequest{}),
+	}
 }
 
-func (f *certificateSigningRequestInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *certificateSigningRequestInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *certificateSigningRequestInformer) Lister() listers.CertificateSigningRequestLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta1.CertificateSigningRequest{})
-	return listers.NewCertificateSigningRequestLister(idx)
+func (i *certificateSigningRequestInformer) Lister() listers.CertificateSigningRequestLister {
+	return listers.NewCertificateSigningRequestLister(i.informer.GetIndexer())
 }

@@ -5,27 +5,30 @@ package v1beta1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/coordination/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/coordination/v1beta1"
 	listers "k8s.io/client-go/listers/coordination/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type leaseInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.LeaseInformer = &leaseInformer{}
 
-func (f *leaseInformer) resource() schema.GroupVersionResource {
-	return v1beta1.SchemeGroupVersion.WithResource("leases")
+func NewLeaseInformer(f xnsinformers.SharedInformerFactory) informers.LeaseInformer {
+	resource := v1beta1.SchemeGroupVersion.WithResource("leases")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &leaseInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.Lease{}),
+	}
 }
 
-func (f *leaseInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *leaseInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *leaseInformer) Lister() listers.LeaseLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta1.Lease{})
-	return listers.NewLeaseLister(idx)
+func (i *leaseInformer) Lister() listers.LeaseLister {
+	return listers.NewLeaseLister(i.informer.GetIndexer())
 }

@@ -5,27 +5,30 @@ package v2beta1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/autoscaling/v2beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/autoscaling/v2beta1"
 	listers "k8s.io/client-go/listers/autoscaling/v2beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type horizontalPodAutoscalerInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.HorizontalPodAutoscalerInformer = &horizontalPodAutoscalerInformer{}
 
-func (f *horizontalPodAutoscalerInformer) resource() schema.GroupVersionResource {
-	return v2beta1.SchemeGroupVersion.WithResource("horizontalpodautoscalers")
+func NewHorizontalPodAutoscalerInformer(f xnsinformers.SharedInformerFactory) informers.HorizontalPodAutoscalerInformer {
+	resource := v2beta1.SchemeGroupVersion.WithResource("horizontalpodautoscalers")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &horizontalPodAutoscalerInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v2beta1.HorizontalPodAutoscaler{}),
+	}
 }
 
-func (f *horizontalPodAutoscalerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *horizontalPodAutoscalerInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *horizontalPodAutoscalerInformer) Lister() listers.HorizontalPodAutoscalerLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v2beta1.HorizontalPodAutoscaler{})
-	return listers.NewHorizontalPodAutoscalerLister(idx)
+func (i *horizontalPodAutoscalerInformer) Lister() listers.HorizontalPodAutoscalerLister {
+	return listers.NewHorizontalPodAutoscalerLister(i.informer.GetIndexer())
 }

@@ -19,5 +19,5 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) PriorityClasses() informers.PriorityClassInformer {
-	return &priorityClassInformer{factory: v.factory}
+	return NewPriorityClassInformer(v.factory)
 }

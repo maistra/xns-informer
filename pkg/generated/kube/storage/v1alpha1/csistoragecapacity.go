@@ -5,27 +5,30 @@ package v1alpha1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/storage/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/storage/v1alpha1"
 	listers "k8s.io/client-go/listers/storage/v1alpha1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type cSIStorageCapacityInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.CSIStorageCapacityInformer = &cSIStorageCapacityInformer{}
 
-func (f *cSIStorageCapacityInformer) resource() schema.GroupVersionResource {
-	return v1alpha1.SchemeGroupVersion.WithResource("csistoragecapacities")
+func NewCSIStorageCapacityInformer(f xnsinformers.SharedInformerFactory) informers.CSIStorageCapacityInformer {
+	resource := v1alpha1.SchemeGroupVersion.WithResource("csistoragecapacities")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &cSIStorageCapacityInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.CSIStorageCapacity{}),
+	}
 }
 
-func (f *cSIStorageCapacityInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *cSIStorageCapacityInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *cSIStorageCapacityInformer) Lister() listers.CSIStorageCapacityLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1alpha1.CSIStorageCapacity{})
-	return listers.NewCSIStorageCapacityLister(idx)
+func (i *cSIStorageCapacityInformer) Lister() listers.CSIStorageCapacityLister {
+	return listers.NewCSIStorageCapacityLister(i.informer.GetIndexer())
 }

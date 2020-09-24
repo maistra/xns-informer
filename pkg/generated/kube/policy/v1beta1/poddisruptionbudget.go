@@ -5,27 +5,30 @@ package v1beta1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/policy/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/policy/v1beta1"
 	listers "k8s.io/client-go/listers/policy/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type podDisruptionBudgetInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.PodDisruptionBudgetInformer = &podDisruptionBudgetInformer{}
 
-func (f *podDisruptionBudgetInformer) resource() schema.GroupVersionResource {
-	return v1beta1.SchemeGroupVersion.WithResource("poddisruptionbudgets")
+func NewPodDisruptionBudgetInformer(f xnsinformers.SharedInformerFactory) informers.PodDisruptionBudgetInformer {
+	resource := v1beta1.SchemeGroupVersion.WithResource("poddisruptionbudgets")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &podDisruptionBudgetInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.PodDisruptionBudget{}),
+	}
 }
 
-func (f *podDisruptionBudgetInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *podDisruptionBudgetInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *podDisruptionBudgetInformer) Lister() listers.PodDisruptionBudgetLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta1.PodDisruptionBudget{})
-	return listers.NewPodDisruptionBudgetLister(idx)
+func (i *podDisruptionBudgetInformer) Lister() listers.PodDisruptionBudgetLister {
+	return listers.NewPodDisruptionBudgetLister(i.informer.GetIndexer())
 }

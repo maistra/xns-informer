@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/admissionregistration/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/admissionregistration/v1"
 	listers "k8s.io/client-go/listers/admissionregistration/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type validatingWebhookConfigurationInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.ValidatingWebhookConfigurationInformer = &validatingWebhookConfigurationInformer{}
 
-func (f *validatingWebhookConfigurationInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("validatingwebhookconfigurations")
+func NewValidatingWebhookConfigurationInformer(f xnsinformers.SharedInformerFactory) informers.ValidatingWebhookConfigurationInformer {
+	resource := v1.SchemeGroupVersion.WithResource("validatingwebhookconfigurations")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &validatingWebhookConfigurationInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.ValidatingWebhookConfiguration{}),
+	}
 }
 
-func (f *validatingWebhookConfigurationInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *validatingWebhookConfigurationInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *validatingWebhookConfigurationInformer) Lister() listers.ValidatingWebhookConfigurationLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.ValidatingWebhookConfiguration{})
-	return listers.NewValidatingWebhookConfigurationLister(idx)
+func (i *validatingWebhookConfigurationInformer) Lister() listers.ValidatingWebhookConfigurationLister {
+	return listers.NewValidatingWebhookConfigurationLister(i.informer.GetIndexer())
 }

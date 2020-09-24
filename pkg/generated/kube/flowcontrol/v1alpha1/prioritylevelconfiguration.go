@@ -5,27 +5,30 @@ package v1alpha1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/flowcontrol/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/flowcontrol/v1alpha1"
 	listers "k8s.io/client-go/listers/flowcontrol/v1alpha1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type priorityLevelConfigurationInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.PriorityLevelConfigurationInformer = &priorityLevelConfigurationInformer{}
 
-func (f *priorityLevelConfigurationInformer) resource() schema.GroupVersionResource {
-	return v1alpha1.SchemeGroupVersion.WithResource("prioritylevelconfigurations")
+func NewPriorityLevelConfigurationInformer(f xnsinformers.SharedInformerFactory) informers.PriorityLevelConfigurationInformer {
+	resource := v1alpha1.SchemeGroupVersion.WithResource("prioritylevelconfigurations")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &priorityLevelConfigurationInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.PriorityLevelConfiguration{}),
+	}
 }
 
-func (f *priorityLevelConfigurationInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *priorityLevelConfigurationInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *priorityLevelConfigurationInformer) Lister() listers.PriorityLevelConfigurationLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1alpha1.PriorityLevelConfiguration{})
-	return listers.NewPriorityLevelConfigurationLister(idx)
+func (i *priorityLevelConfigurationInformer) Lister() listers.PriorityLevelConfigurationLister {
+	return listers.NewPriorityLevelConfigurationLister(i.informer.GetIndexer())
 }

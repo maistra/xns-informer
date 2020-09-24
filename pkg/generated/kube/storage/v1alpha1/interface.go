@@ -20,8 +20,8 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) CSIStorageCapacities() informers.CSIStorageCapacityInformer {
-	return &cSIStorageCapacityInformer{factory: v.factory}
+	return NewCSIStorageCapacityInformer(v.factory)
 }
 func (v *version) VolumeAttachments() informers.VolumeAttachmentInformer {
-	return &volumeAttachmentInformer{factory: v.factory}
+	return NewVolumeAttachmentInformer(v.factory)
 }

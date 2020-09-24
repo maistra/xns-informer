@@ -34,50 +34,50 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) ComponentStatuses() informers.ComponentStatusInformer {
-	return &componentStatusInformer{factory: v.factory}
+	return NewComponentStatusInformer(v.factory)
 }
 func (v *version) ConfigMaps() informers.ConfigMapInformer {
-	return &configMapInformer{factory: v.factory}
+	return NewConfigMapInformer(v.factory)
 }
 func (v *version) Endpoints() informers.EndpointsInformer {
-	return &endpointsInformer{factory: v.factory}
+	return NewEndpointsInformer(v.factory)
 }
 func (v *version) Events() informers.EventInformer {
-	return &eventInformer{factory: v.factory}
+	return NewEventInformer(v.factory)
 }
 func (v *version) LimitRanges() informers.LimitRangeInformer {
-	return &limitRangeInformer{factory: v.factory}
+	return NewLimitRangeInformer(v.factory)
 }
 func (v *version) Namespaces() informers.NamespaceInformer {
-	return &namespaceInformer{factory: v.factory}
+	return NewNamespaceInformer(v.factory)
 }
 func (v *version) Nodes() informers.NodeInformer {
-	return &nodeInformer{factory: v.factory}
+	return NewNodeInformer(v.factory)
 }
 func (v *version) PersistentVolumes() informers.PersistentVolumeInformer {
-	return &persistentVolumeInformer{factory: v.factory}
+	return NewPersistentVolumeInformer(v.factory)
 }
 func (v *version) PersistentVolumeClaims() informers.PersistentVolumeClaimInformer {
-	return &persistentVolumeClaimInformer{factory: v.factory}
+	return NewPersistentVolumeClaimInformer(v.factory)
 }
 func (v *version) Pods() informers.PodInformer {
-	return &podInformer{factory: v.factory}
+	return NewPodInformer(v.factory)
 }
 func (v *version) PodTemplates() informers.PodTemplateInformer {
-	return &podTemplateInformer{factory: v.factory}
+	return NewPodTemplateInformer(v.factory)
 }
 func (v *version) ReplicationControllers() informers.ReplicationControllerInformer {
-	return &replicationControllerInformer{factory: v.factory}
+	return NewReplicationControllerInformer(v.factory)
 }
 func (v *version) ResourceQuotas() informers.ResourceQuotaInformer {
-	return &resourceQuotaInformer{factory: v.factory}
+	return NewResourceQuotaInformer(v.factory)
 }
 func (v *version) Secrets() informers.SecretInformer {
-	return &secretInformer{factory: v.factory}
+	return NewSecretInformer(v.factory)
 }
 func (v *version) Services() informers.ServiceInformer {
-	return &serviceInformer{factory: v.factory}
+	return NewServiceInformer(v.factory)
 }
 func (v *version) ServiceAccounts() informers.ServiceAccountInformer {
-	return &serviceAccountInformer{factory: v.factory}
+	return NewServiceAccountInformer(v.factory)
 }

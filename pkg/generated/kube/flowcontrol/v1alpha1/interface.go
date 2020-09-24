@@ -20,8 +20,8 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) FlowSchemas() informers.FlowSchemaInformer {
-	return &flowSchemaInformer{factory: v.factory}
+	return NewFlowSchemaInformer(v.factory)
 }
 func (v *version) PriorityLevelConfigurations() informers.PriorityLevelConfigurationInformer {
-	return &priorityLevelConfigurationInformer{factory: v.factory}
+	return NewPriorityLevelConfigurationInformer(v.factory)
 }

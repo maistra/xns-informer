@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/networking/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/networking/v1"
 	listers "k8s.io/client-go/listers/networking/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type networkPolicyInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.NetworkPolicyInformer = &networkPolicyInformer{}
 
-func (f *networkPolicyInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("networkpolicies")
+func NewNetworkPolicyInformer(f xnsinformers.SharedInformerFactory) informers.NetworkPolicyInformer {
+	resource := v1.SchemeGroupVersion.WithResource("networkpolicies")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &networkPolicyInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.NetworkPolicy{}),
+	}
 }
 
-func (f *networkPolicyInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *networkPolicyInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *networkPolicyInformer) Lister() listers.NetworkPolicyLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.NetworkPolicy{})
-	return listers.NewNetworkPolicyLister(idx)
+func (i *networkPolicyInformer) Lister() listers.NetworkPolicyLister {
+	return listers.NewNetworkPolicyLister(i.informer.GetIndexer())
 }

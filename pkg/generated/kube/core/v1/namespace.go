@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type namespaceInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.NamespaceInformer = &namespaceInformer{}
 
-func (f *namespaceInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("namespaces")
+func NewNamespaceInformer(f xnsinformers.SharedInformerFactory) informers.NamespaceInformer {
+	resource := v1.SchemeGroupVersion.WithResource("namespaces")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &namespaceInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Namespace{}),
+	}
 }
 
-func (f *namespaceInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *namespaceInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *namespaceInformer) Lister() listers.NamespaceLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.Namespace{})
-	return listers.NewNamespaceLister(idx)
+func (i *namespaceInformer) Lister() listers.NamespaceLister {
+	return listers.NewNamespaceLister(i.informer.GetIndexer())
 }

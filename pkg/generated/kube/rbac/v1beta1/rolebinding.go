@@ -5,27 +5,30 @@ package v1beta1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/rbac/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/rbac/v1beta1"
 	listers "k8s.io/client-go/listers/rbac/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type roleBindingInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.RoleBindingInformer = &roleBindingInformer{}
 
-func (f *roleBindingInformer) resource() schema.GroupVersionResource {
-	return v1beta1.SchemeGroupVersion.WithResource("rolebindings")
+func NewRoleBindingInformer(f xnsinformers.SharedInformerFactory) informers.RoleBindingInformer {
+	resource := v1beta1.SchemeGroupVersion.WithResource("rolebindings")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &roleBindingInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.RoleBinding{}),
+	}
 }
 
-func (f *roleBindingInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *roleBindingInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *roleBindingInformer) Lister() listers.RoleBindingLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta1.RoleBinding{})
-	return listers.NewRoleBindingLister(idx)
+func (i *roleBindingInformer) Lister() listers.RoleBindingLister {
+	return listers.NewRoleBindingLister(i.informer.GetIndexer())
 }

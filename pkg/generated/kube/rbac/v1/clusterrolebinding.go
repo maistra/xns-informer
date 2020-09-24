@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/rbac/v1"
 	listers "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type clusterRoleBindingInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.ClusterRoleBindingInformer = &clusterRoleBindingInformer{}
 
-func (f *clusterRoleBindingInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("clusterrolebindings")
+func NewClusterRoleBindingInformer(f xnsinformers.SharedInformerFactory) informers.ClusterRoleBindingInformer {
+	resource := v1.SchemeGroupVersion.WithResource("clusterrolebindings")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &clusterRoleBindingInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.ClusterRoleBinding{}),
+	}
 }
 
-func (f *clusterRoleBindingInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *clusterRoleBindingInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *clusterRoleBindingInformer) Lister() listers.ClusterRoleBindingLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.ClusterRoleBinding{})
-	return listers.NewClusterRoleBindingLister(idx)
+func (i *clusterRoleBindingInformer) Lister() listers.ClusterRoleBindingLister {
+	return listers.NewClusterRoleBindingLister(i.informer.GetIndexer())
 }

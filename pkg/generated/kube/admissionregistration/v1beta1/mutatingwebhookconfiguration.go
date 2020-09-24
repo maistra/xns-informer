@@ -5,27 +5,30 @@ package v1beta1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/api/admissionregistration/v1beta1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/admissionregistration/v1beta1"
 	listers "k8s.io/client-go/listers/admissionregistration/v1beta1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type mutatingWebhookConfigurationInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.MutatingWebhookConfigurationInformer = &mutatingWebhookConfigurationInformer{}
 
-func (f *mutatingWebhookConfigurationInformer) resource() schema.GroupVersionResource {
-	return v1beta1.SchemeGroupVersion.WithResource("mutatingwebhookconfigurations")
+func NewMutatingWebhookConfigurationInformer(f xnsinformers.SharedInformerFactory) informers.MutatingWebhookConfigurationInformer {
+	resource := v1beta1.SchemeGroupVersion.WithResource("mutatingwebhookconfigurations")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &mutatingWebhookConfigurationInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.MutatingWebhookConfiguration{}),
+	}
 }
 
-func (f *mutatingWebhookConfigurationInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *mutatingWebhookConfigurationInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *mutatingWebhookConfigurationInformer) Lister() listers.MutatingWebhookConfigurationLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1beta1.MutatingWebhookConfiguration{})
-	return listers.NewMutatingWebhookConfigurationLister(idx)
+func (i *mutatingWebhookConfigurationInformer) Lister() listers.MutatingWebhookConfigurationLister {
+	return listers.NewMutatingWebhookConfigurationLister(i.informer.GetIndexer())
 }

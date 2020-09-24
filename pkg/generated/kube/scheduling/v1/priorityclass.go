@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/scheduling/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/scheduling/v1"
 	listers "k8s.io/client-go/listers/scheduling/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type priorityClassInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.PriorityClassInformer = &priorityClassInformer{}
 
-func (f *priorityClassInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("priorityclasses")
+func NewPriorityClassInformer(f xnsinformers.SharedInformerFactory) informers.PriorityClassInformer {
+	resource := v1.SchemeGroupVersion.WithResource("priorityclasses")
+	informer := f.ClusterResource(resource).Informer()
+
+	return &priorityClassInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.PriorityClass{}),
+	}
 }
 
-func (f *priorityClassInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.ClusterResource(f.resource()).Informer()
+func (i *priorityClassInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *priorityClassInformer) Lister() listers.PriorityClassLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.PriorityClass{})
-	return listers.NewPriorityClassLister(idx)
+func (i *priorityClassInformer) Lister() listers.PriorityClassLister {
+	return listers.NewPriorityClassLister(i.informer.GetIndexer())
 }

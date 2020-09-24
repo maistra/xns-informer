@@ -20,8 +20,8 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) MutatingWebhookConfigurations() informers.MutatingWebhookConfigurationInformer {
-	return &mutatingWebhookConfigurationInformer{factory: v.factory}
+	return NewMutatingWebhookConfigurationInformer(v.factory)
 }
 func (v *version) ValidatingWebhookConfigurations() informers.ValidatingWebhookConfigurationInformer {
-	return &validatingWebhookConfigurationInformer{factory: v.factory}
+	return NewValidatingWebhookConfigurationInformer(v.factory)
 }

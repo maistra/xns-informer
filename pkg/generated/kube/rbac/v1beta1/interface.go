@@ -22,14 +22,14 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) ClusterRoles() informers.ClusterRoleInformer {
-	return &clusterRoleInformer{factory: v.factory}
+	return NewClusterRoleInformer(v.factory)
 }
 func (v *version) ClusterRoleBindings() informers.ClusterRoleBindingInformer {
-	return &clusterRoleBindingInformer{factory: v.factory}
+	return NewClusterRoleBindingInformer(v.factory)
 }
 func (v *version) Roles() informers.RoleInformer {
-	return &roleInformer{factory: v.factory}
+	return NewRoleInformer(v.factory)
 }
 func (v *version) RoleBindings() informers.RoleBindingInformer {
-	return &roleBindingInformer{factory: v.factory}
+	return NewRoleBindingInformer(v.factory)
 }

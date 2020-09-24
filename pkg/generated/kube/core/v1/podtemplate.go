@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type podTemplateInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.PodTemplateInformer = &podTemplateInformer{}
 
-func (f *podTemplateInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("podtemplates")
+func NewPodTemplateInformer(f xnsinformers.SharedInformerFactory) informers.PodTemplateInformer {
+	resource := v1.SchemeGroupVersion.WithResource("podtemplates")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &podTemplateInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.PodTemplate{}),
+	}
 }
 
-func (f *podTemplateInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *podTemplateInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *podTemplateInformer) Lister() listers.PodTemplateLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.PodTemplate{})
-	return listers.NewPodTemplateLister(idx)
+func (i *podTemplateInformer) Lister() listers.PodTemplateLister {
+	return listers.NewPodTemplateLister(i.informer.GetIndexer())
 }

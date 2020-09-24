@@ -5,27 +5,30 @@ package v1
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	informers "k8s.io/client-go/informers/core/v1"
 	listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
 type serviceAccountInformer struct {
-	factory xnsinformers.SharedInformerFactory
+	informer cache.SharedIndexInformer
 }
 
 var _ informers.ServiceAccountInformer = &serviceAccountInformer{}
 
-func (f *serviceAccountInformer) resource() schema.GroupVersionResource {
-	return v1.SchemeGroupVersion.WithResource("serviceaccounts")
+func NewServiceAccountInformer(f xnsinformers.SharedInformerFactory) informers.ServiceAccountInformer {
+	resource := v1.SchemeGroupVersion.WithResource("serviceaccounts")
+	informer := f.NamespacedResource(resource).Informer()
+
+	return &serviceAccountInformer{
+		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.ServiceAccount{}),
+	}
 }
 
-func (f *serviceAccountInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.NamespacedResource(f.resource()).Informer()
+func (i *serviceAccountInformer) Informer() cache.SharedIndexInformer {
+	return i.informer
 }
 
-func (f *serviceAccountInformer) Lister() listers.ServiceAccountLister {
-	idx := xnsinformers.NewCacheConverter(f.Informer().GetIndexer(), &v1.ServiceAccount{})
-	return listers.NewServiceAccountLister(idx)
+func (i *serviceAccountInformer) Lister() listers.ServiceAccountLister {
+	return listers.NewServiceAccountLister(i.informer.GetIndexer())
 }

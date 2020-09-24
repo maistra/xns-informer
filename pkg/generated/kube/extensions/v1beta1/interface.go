@@ -24,20 +24,20 @@ func New(factory xnsinformers.SharedInformerFactory) Interface {
 	return &version{factory: factory}
 }
 func (v *version) DaemonSets() informers.DaemonSetInformer {
-	return &daemonSetInformer{factory: v.factory}
+	return NewDaemonSetInformer(v.factory)
 }
 func (v *version) Deployments() informers.DeploymentInformer {
-	return &deploymentInformer{factory: v.factory}
+	return NewDeploymentInformer(v.factory)
 }
 func (v *version) Ingresses() informers.IngressInformer {
-	return &ingressInformer{factory: v.factory}
+	return NewIngressInformer(v.factory)
 }
 func (v *version) NetworkPolicies() informers.NetworkPolicyInformer {
-	return &networkPolicyInformer{factory: v.factory}
+	return NewNetworkPolicyInformer(v.factory)
 }
 func (v *version) PodSecurityPolicies() informers.PodSecurityPolicyInformer {
-	return &podSecurityPolicyInformer{factory: v.factory}
+	return NewPodSecurityPolicyInformer(v.factory)
 }
 func (v *version) ReplicaSets() informers.ReplicaSetInformer {
-	return &replicaSetInformer{factory: v.factory}
+	return NewReplicaSetInformer(v.factory)
 }
