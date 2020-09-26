@@ -115,7 +115,7 @@ func Packages(c *generator.Context, args *args.GeneratorArgs) generator.Packages
 						DefaultGen: generator.DefaultGen{
 							OptionalName: strings.ToLower(t.Name.Name),
 						},
-						imports:          generator.NewImportTracker(),
+						imports:          generator.NewImportTracker(t),
 						listersPackage:   listersPkg,
 						informersPackage: informersPkg,
 						groupVersion:     gv,
