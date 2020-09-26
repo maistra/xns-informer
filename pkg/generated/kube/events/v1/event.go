@@ -4,7 +4,7 @@ package v1
 
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
-	v1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/events/v1"
 	informers "k8s.io/client-go/informers/events/v1"
 	listers "k8s.io/client-go/listers/events/v1"
 	"k8s.io/client-go/tools/cache"

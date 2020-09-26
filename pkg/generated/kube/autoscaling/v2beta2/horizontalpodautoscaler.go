@@ -4,7 +4,7 @@ package v2beta2
 
 import (
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
-	"k8s.io/api/autoscaling/v2beta2"
+	v2beta2 "k8s.io/api/autoscaling/v2beta2"
 	informers "k8s.io/client-go/informers/autoscaling/v2beta2"
 	listers "k8s.io/client-go/listers/autoscaling/v2beta2"
 	"k8s.io/client-go/tools/cache"
