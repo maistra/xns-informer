@@ -11,7 +11,7 @@ import (
 	"k8s.io/code-generator/cmd/client-gen/generators/util"
 )
 
-type listerGenerator struct {
+type informerGenerator struct {
 	generator.DefaultGen
 	imports          namer.ImportTracker
 	listersPackage   string
@@ -20,11 +20,11 @@ type listerGenerator struct {
 	typeToGenerate   *types.Type
 }
 
-func (g *listerGenerator) Filter(c *generator.Context, t *types.Type) bool {
+func (g *informerGenerator) Filter(c *generator.Context, t *types.Type) bool {
 	return t == g.typeToGenerate
 }
 
-func (g *listerGenerator) Imports(c *generator.Context) (imports []string) {
+func (g *informerGenerator) Imports(c *generator.Context) (imports []string) {
 	imports = append(imports, g.imports.ImportLines()...)
 	imports = append(imports, fmt.Sprintf("listers %q", g.listersPackage))
 	imports = append(imports, fmt.Sprintf("informers %q", g.informersPackage))
@@ -32,7 +32,7 @@ func (g *listerGenerator) Imports(c *generator.Context) (imports []string) {
 	return
 }
 
-func (g *listerGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
+func (g *informerGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	tags, err := util.ParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
 	if err != nil {
 		return err

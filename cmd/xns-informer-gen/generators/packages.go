@@ -111,7 +111,7 @@ func Packages(c *generator.Context, args *args.GeneratorArgs) generator.Packages
 				})
 
 				for _, t := range typesToGenerate {
-					generators = append(generators, &listerGenerator{
+					generators = append(generators, &informerGenerator{
 						DefaultGen: generator.DefaultGen{
 							OptionalName: strings.ToLower(t.Name.Name),
 						},
