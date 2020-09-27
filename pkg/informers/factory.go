@@ -1,7 +1,6 @@
 package informers
 
 import (
-	"errors"
 	"sync"
 	"time"
 
@@ -28,14 +27,53 @@ type SharedInformerFactory interface {
 	GetScheme() *runtime.Scheme
 }
 
+// SharedInformerOption is a functional option for a SharedInformerFactory.
+type SharedInformerOption func(*multiNamespaceInformerFactory) *multiNamespaceInformerFactory
+
+// WithScheme sets a custom scheme for a SharedInformerFactory.
+func WithScheme(scheme *runtime.Scheme) SharedInformerOption {
+	return func(factory *multiNamespaceInformerFactory) *multiNamespaceInformerFactory {
+		factory.scheme = scheme
+		return factory
+	}
+}
+
+// WithNamespaces sets the namespaces for a SharedInformerFactory.
+func WithNamespaces(namespaces []string) SharedInformerOption {
+	return func(factory *multiNamespaceInformerFactory) *multiNamespaceInformerFactory {
+		factory.SetNamespaces(namespaces)
+		return factory
+	}
+}
+
+// WithTweakListOptions sets list options for a SharedInformerFactory.
+func WithTweakListOptions(tweakListOptions dynamicinformer.TweakListOptionsFunc) SharedInformerOption {
+	return func(factory *multiNamespaceInformerFactory) *multiNamespaceInformerFactory {
+		factory.tweakListOptions = tweakListOptions
+		return factory
+	}
+}
+
+// WithCustomResyncConfig sets custom resync period for certain resources.
+func WithCustomResyncConfig(config map[schema.GroupVersionResource]time.Duration) SharedInformerOption {
+	return func(factory *multiNamespaceInformerFactory) *multiNamespaceInformerFactory {
+		for gvr, resyncPeriod := range config {
+			factory.customResync[gvr] = resyncPeriod
+		}
+		return factory
+	}
+}
+
 // multiNamespaceInformerFactory provides a dynamic informer factory that
 // creates informers which track changes across a set of namespaces.
 type multiNamespaceInformerFactory struct {
-	client       dynamic.Interface
-	scheme       *runtime.Scheme
-	resyncPeriod time.Duration
-	lock         sync.Mutex
-	namespaces   sets.Set
+	client           dynamic.Interface
+	scheme           *runtime.Scheme
+	resyncPeriod     time.Duration
+	lock             sync.Mutex
+	namespaces       sets.Set
+	tweakListOptions dynamicinformer.TweakListOptionsFunc
+	customResync     map[schema.GroupVersionResource]time.Duration
 
 	// Map of created informers by resource type.
 	informers map[schema.GroupVersionResource]*multiNamespaceGenericInformer
@@ -43,25 +81,34 @@ type multiNamespaceInformerFactory struct {
 
 var _ SharedInformerFactory = &multiNamespaceInformerFactory{}
 
-// NewSharedInformerFactory returns a new informer factory for the given namespaces.
-func NewSharedInformerFactory(client dynamic.Interface, resync time.Duration, namespaces []string) (SharedInformerFactory, error) {
-	if len(namespaces) < 1 {
-		return nil, errors.New("must provide at least one namespace")
-	}
-
-	factory := &multiNamespaceInformerFactory{
-		client:       client,
-		scheme:       scheme.Scheme, // TODO: This should be configuable.
-		resyncPeriod: resync,
-		informers:    make(map[schema.GroupVersionResource]*multiNamespaceGenericInformer),
-	}
-
-	factory.SetNamespaces(namespaces)
-
-	return factory, nil
+// NewSharedInformerFactory returns a new cross-namespace shared informer
+// factory.  Use SetNamespaces on the resulting factory to configure the set of
+// namespaces to be watched.
+func NewSharedInformerFactory(client dynamic.Interface, resync time.Duration) SharedInformerFactory {
+	return NewSharedInformerFactoryWithOptions(client, resync)
 }
 
-// GetScheme returns the factory's runtime.Scheme.
+// NewSharedInformerFactoryWithOptions constructs a new cross-namespace shared
+// informer factory with the given options applied.  You must either supply the
+// WithNamespaces option, or call SetNamespaces on the returned factory to
+// configure the set of namespaces to be watched.
+func NewSharedInformerFactoryWithOptions(client dynamic.Interface, resync time.Duration, options ...SharedInformerOption) SharedInformerFactory {
+	factory := &multiNamespaceInformerFactory{
+		client:       client,
+		scheme:       scheme.Scheme,
+		resyncPeriod: resync,
+		informers:    make(map[schema.GroupVersionResource]*multiNamespaceGenericInformer),
+		customResync: make(map[schema.GroupVersionResource]time.Duration),
+	}
+
+	for _, opt := range options {
+		factory = opt(factory)
+	}
+
+	return factory
+}
+
+// GetScheme returns the runtime.Scheme for the factory.
 func (f *multiNamespaceInformerFactory) GetScheme() *runtime.Scheme {
 	return f.scheme
 }
@@ -119,8 +166,6 @@ func (f *multiNamespaceInformerFactory) NamespacedResource(gvr schema.GroupVersi
 // ForResource returns a new cross-namespace informer for the given resource
 // type.  If an informer for this resource type has been previously requested,
 // it will be returned, otherwise a new one will be created.
-//
-// TODO: Should we use the discovery API to determine resource scope?
 func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResource, namespaced bool) informers.GenericInformer {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -130,8 +175,15 @@ func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResou
 		return informer
 	}
 
+	// Check for a custom resync period for this resource type.
+	resyncPeriod, ok := f.customResync[gvr]
+	if !ok {
+		resyncPeriod = f.resyncPeriod
+	}
+
 	newInformerFunc := func(namespace string) informers.GenericInformer {
 		// Namespace argument is ignored for cluster-scoped resources.
+		// TODO: Should we use the discovery API to determine resource scope?
 		if !namespaced {
 			namespace = metav1.NamespaceAll
 		}
@@ -140,9 +192,9 @@ func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResou
 			f.client,
 			gvr,
 			namespace,
-			f.resyncPeriod,
+			resyncPeriod,
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-			nil,
+			f.tweakListOptions,
 		)
 	}
 

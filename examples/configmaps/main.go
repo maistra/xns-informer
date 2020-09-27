@@ -38,10 +38,11 @@ func main() {
 	namespaces := os.Args[1:]
 	log.Printf("Creating informer for namespaces: %v", namespaces)
 
-	factory, err := xnsinfomers.NewSharedInformerFactory(client, resync, namespaces)
-	if err != nil {
-		log.Fatal(err)
-	}
+	factory := xnsinfomers.NewSharedInformerFactoryWithOptions(
+		client,
+		resync,
+		xnsinfomers.WithNamespaces(namespaces),
+	)
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(factory)
 	cmInformer := kubeInformerFactory.Core().V1().ConfigMaps()

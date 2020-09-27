@@ -10,6 +10,7 @@ import (
 	"k8s.io/klog"
 )
 
+// NewInformerFunc returns a new informer for a given namespace.
 type NewInformerFunc func(namespace string) informers.GenericInformer
 
 // multiNamespaceGenericInformer satisfies the GenericInformer interface and
