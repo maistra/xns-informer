@@ -24,7 +24,7 @@ var _ cache.Indexer = &cacheConverter{}
 // should represent the type backing the given runtime.Object.  Items read from
 // the cache will be converted to the concrete type, and items written to the
 // cache will be converted to an unstructured object.
-func NewCacheConverter(conv runtime.ObjectConvertor, idx cache.Indexer, obj runtime.Object) *cacheConverter {
+func NewCacheConverter(conv runtime.ObjectConvertor, idx cache.Indexer, obj runtime.Object) cache.Indexer {
 	return &cacheConverter{
 		indexer:   idx,
 		outType:   reflect.ValueOf(obj).Elem().Type(),
@@ -171,7 +171,7 @@ var _ cache.SharedIndexInformer = &informerConverter{}
 // and attempts to convert the objects passed to them into the configured
 // concrete type.  It also creates a new cache converter that will be returned
 // when GetStore or GetIndexer is called.
-func NewInformerConverter(conv runtime.ObjectConvertor, informer cache.SharedIndexInformer, obj runtime.Object) *informerConverter {
+func NewInformerConverter(conv runtime.ObjectConvertor, informer cache.SharedIndexInformer, obj runtime.Object) cache.SharedIndexInformer {
 	return &informerConverter{
 		informer:  informer,
 		indexer:   NewCacheConverter(conv, informer.GetIndexer(), obj),

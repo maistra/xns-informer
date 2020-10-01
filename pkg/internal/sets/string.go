@@ -14,6 +14,7 @@
 
 package sets
 
+// Set represents a set.
 type Set map[string]struct{}
 
 // NewSet creates a Set from a list of values.

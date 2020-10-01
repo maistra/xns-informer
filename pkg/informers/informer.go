@@ -10,13 +10,25 @@ import (
 	"k8s.io/klog"
 )
 
+// MultiNamespaceInformer extends the cache.SharedIndexInformer interface with
+// methods relevant to cross-namespace informers.
+type MultiNamespaceInformer interface {
+	cache.SharedIndexInformer
+
+	AddNamespace(namespace string)
+	RemoveNamespace(namespace string)
+	NonBlockingRun(stopCh <-chan struct{})
+	WaitForStop(stopCh <-chan struct{})
+	GetIndexers() map[string]cache.Indexer
+}
+
 // NewInformerFunc returns a new informer for a given namespace.
 type NewInformerFunc func(namespace string) informers.GenericInformer
 
 // multiNamespaceGenericInformer satisfies the GenericInformer interface and
 // provides cross-namespace informers and listers.
 type multiNamespaceGenericInformer struct {
-	informer *multiNamespaceInformer
+	informer MultiNamespaceInformer
 	lister   cache.GenericLister
 }
 
@@ -65,7 +77,7 @@ var _ cache.SharedIndexInformer = &multiNamespaceInformer{}
 // NewMultiNamespaceInformer returns a new cross-namespace informer.  The given
 // NewInformerFunc will be used to craft new single-namespace informers when
 // adding namespaces.
-func NewMultiNamespaceInformer(namespaced bool, resync time.Duration, newInformer NewInformerFunc) *multiNamespaceInformer {
+func NewMultiNamespaceInformer(namespaced bool, resync time.Duration, newInformer NewInformerFunc) MultiNamespaceInformer {
 	informer := &multiNamespaceInformer{
 		informers:     make(map[string]*informerData),
 		eventHandlers: make([]eventHandlerData, 0),
@@ -281,21 +293,8 @@ func (i *multiNamespaceInformer) HasSynced() bool {
 	return true
 }
 
-// getListers returns a map of namespaces to their GenericListers.
-func (i *multiNamespaceInformer) getListers() map[string]cache.GenericLister {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-
-	res := make(map[string]cache.GenericLister, len(i.informers))
-	for namespace, informer := range i.informers {
-		res[namespace] = informer.lister
-	}
-
-	return res
-}
-
-// getIndexers returns a map of namespaces to their cache.Indexer.
-func (i *multiNamespaceInformer) getIndexers() map[string]cache.Indexer {
+// GetIndexers returns a map of namespaces to their cache.Indexer.
+func (i *multiNamespaceInformer) GetIndexers() map[string]cache.Indexer {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 

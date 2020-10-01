@@ -8,19 +8,27 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+// ErrCacheReadOnly is returned for any attempted write.
 var ErrCacheReadOnly = errors.New("cache is read-only")
 
+// multiIndexer represents an object that can return a map of namespaces to
+// indexers, e.g. a multiNamespaceIndexer instance.
+type multiIndexer interface {
+	GetIndexers() map[string]cache.Indexer
+}
+
 type cacheReader struct {
-	informer *multiNamespaceInformer
+	indexer multiIndexer
 }
 
 var _ cache.Indexer = &cacheReader{}
 
 // NewCacheReader returns a new cache reader which satisfies the cache.Indexer
 // interface and provides read-only access across the underlying caches for the
-// given cross-namespace informer.
-func NewCacheReader(informer *multiNamespaceInformer) *cacheReader {
-	return &cacheReader{informer: informer}
+// given cross-namespace indexer.  The argument is any type with a GetIndexers
+// method that returns a map of namespaces to indexers.
+func NewCacheReader(indexer multiIndexer) cache.Indexer {
+	return &cacheReader{indexer: indexer}
 }
 
 func (c *cacheReader) Add(obj interface{}) error {
@@ -36,7 +44,7 @@ func (c *cacheReader) Delete(obj interface{}) error {
 }
 
 func (c *cacheReader) List() (res []interface{}) {
-	for _, idx := range c.informer.getIndexers() {
+	for _, idx := range c.indexer.GetIndexers() {
 		res = append(res, idx.List()...)
 	}
 
@@ -44,7 +52,7 @@ func (c *cacheReader) List() (res []interface{}) {
 }
 
 func (c *cacheReader) ListKeys() (res []string) {
-	for _, idx := range c.informer.getIndexers() {
+	for _, idx := range c.indexer.GetIndexers() {
 		res = append(res, idx.ListKeys()...)
 	}
 
@@ -52,8 +60,8 @@ func (c *cacheReader) ListKeys() (res []string) {
 }
 
 func (c *cacheReader) GetIndexers() cache.Indexers {
-	res := make(cache.Indexers)
-	for _, idx := range c.informer.getIndexers() {
+	res := cache.Indexers{}
+	for _, idx := range c.indexer.GetIndexers() {
 		for k, v := range idx.GetIndexers() {
 			res[k] = v
 		}
@@ -63,7 +71,7 @@ func (c *cacheReader) GetIndexers() cache.Indexers {
 }
 
 func (c *cacheReader) Index(indexName string, obj interface{}) (res []interface{}, err error) {
-	for _, idx := range c.informer.getIndexers() {
+	for _, idx := range c.indexer.GetIndexers() {
 		objs, err := idx.Index(indexName, obj)
 		if err != nil {
 			return nil, err
@@ -76,7 +84,7 @@ func (c *cacheReader) Index(indexName string, obj interface{}) (res []interface{
 }
 
 func (c *cacheReader) IndexKeys(indexName, indexKey string) (res []string, err error) {
-	for _, idx := range c.informer.getIndexers() {
+	for _, idx := range c.indexer.GetIndexers() {
 		keys, err := idx.IndexKeys(indexName, indexKey)
 		if err != nil {
 			return nil, err
@@ -89,7 +97,7 @@ func (c *cacheReader) IndexKeys(indexName, indexKey string) (res []string, err e
 }
 
 func (c *cacheReader) ListIndexFuncValues(indexName string) (res []string) {
-	for _, idx := range c.informer.getIndexers() {
+	for _, idx := range c.indexer.GetIndexers() {
 		res = append(res, idx.ListIndexFuncValues(indexName)...)
 	}
 
@@ -97,7 +105,7 @@ func (c *cacheReader) ListIndexFuncValues(indexName string) (res []string) {
 }
 
 func (c *cacheReader) ByIndex(indexName, indexKey string) (res []interface{}, err error) {
-	for _, idx := range c.informer.getIndexers() {
+	for _, idx := range c.indexer.GetIndexers() {
 		keys, err := idx.ByIndex(indexName, indexKey)
 		if err != nil {
 			return nil, err // TODO: Multi-error?
@@ -151,7 +159,7 @@ func (c *cacheReader) Resync() error {
 }
 
 func (c *cacheReader) indexerForNamespace(namespace string) (cache.Indexer, bool) {
-	indexers := c.informer.getIndexers()
+	indexers := c.indexer.GetIndexers()
 
 	if idx, ok := indexers[metav1.NamespaceAll]; ok {
 		return idx, true

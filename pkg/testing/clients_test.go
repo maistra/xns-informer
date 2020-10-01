@@ -3,7 +3,6 @@ package testing
 import (
 	"context"
 	"testing"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -14,44 +13,9 @@ import (
 	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/scheme"
 	kubetesting "k8s.io/client-go/testing"
+
+	internaltesting "github.com/maistra/xns-informer/pkg/internal/testing"
 )
-
-var (
-	timestamp    = metav1.NewTime(time.Now().UTC())
-	configMapGVR = corev1.SchemeGroupVersion.WithResource("configmaps")
-)
-
-func newConfigMap(ns, name string, data map[string]string) *corev1.ConfigMap {
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              name,
-			Namespace:         ns,
-			CreationTimestamp: timestamp,
-		},
-		Data: data,
-	}
-}
-
-func newUnstructuredConfigMap(ns, name string, data map[string]string) *unstructured.Unstructured {
-	unstructuredData := make(map[string]interface{}, len(data))
-
-	for k, v := range data {
-		unstructuredData[k] = v
-	}
-
-	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"kind":       "ConfigMap",
-			"apiVersion": "v1",
-			"metadata": map[string]interface{}{
-				"name":              name,
-				"namespace":         ns,
-				"creationTimestamp": timestamp.ToUnstructured(),
-			},
-			"data": unstructuredData,
-		},
-	}
-}
 
 func TestObjectsToUnstructured(t *testing.T) {
 	testData := map[string]string{"foo": "bar"}
@@ -73,19 +37,19 @@ func TestObjectsToUnstructured(t *testing.T) {
 			name:      "some objects",
 			converter: scheme.Scheme,
 			in: []runtime.Object{
-				newConfigMap("test-ns", "test-cm-1", testData),
-				newConfigMap("test-ns", "test-cm-2", testData),
+				internaltesting.NewConfigMap("test-ns", "test-cm-1", testData),
+				internaltesting.NewConfigMap("test-ns", "test-cm-2", testData),
 			},
 			out: []runtime.Object{
-				newUnstructuredConfigMap("test-ns", "test-cm-1", testData),
-				newUnstructuredConfigMap("test-ns", "test-cm-2", testData),
+				internaltesting.NewUnstructuredConfigMap("test-ns", "test-cm-1", testData),
+				internaltesting.NewUnstructuredConfigMap("test-ns", "test-cm-2", testData),
 			},
 		},
 		{
 			name:      "empty scheme",
 			converter: runtime.NewScheme(),
 			in: []runtime.Object{
-				newConfigMap("test-ns", "test-cm", testData),
+				internaltesting.NewConfigMap("test-ns", "test-cm", testData),
 			},
 			errExpected: true, // Conversion should fail.
 		},
@@ -131,13 +95,13 @@ func TestUnstructuredObjectReflector(t *testing.T) {
 					ActionImpl: kubetesting.ActionImpl{
 						Namespace: "test-ns",
 						Verb:      "create",
-						Resource:  configMapGVR,
+						Resource:  internaltesting.ConfigMapGVR,
 					},
-					Object: newConfigMap("test-ns", "test-cm", testData),
+					Object: internaltesting.NewConfigMap("test-ns", "test-cm", testData),
 				},
 			},
 			expected: []*unstructured.Unstructured{
-				newUnstructuredConfigMap("test-ns", "test-cm", testData),
+				internaltesting.NewUnstructuredConfigMap("test-ns", "test-cm", testData),
 			},
 		},
 		{
@@ -149,21 +113,21 @@ func TestUnstructuredObjectReflector(t *testing.T) {
 					ActionImpl: kubetesting.ActionImpl{
 						Namespace: "test-ns",
 						Verb:      "create",
-						Resource:  configMapGVR,
+						Resource:  internaltesting.ConfigMapGVR,
 					},
-					Object: newConfigMap("test-ns", "test-cm", testData),
+					Object: internaltesting.NewConfigMap("test-ns", "test-cm", testData),
 				},
 				kubetesting.UpdateActionImpl{
 					ActionImpl: kubetesting.ActionImpl{
 						Namespace: "test-ns",
 						Verb:      "update",
-						Resource:  configMapGVR,
+						Resource:  internaltesting.ConfigMapGVR,
 					},
-					Object: newConfigMap("test-ns", "test-cm", updatedData),
+					Object: internaltesting.NewConfigMap("test-ns", "test-cm", updatedData),
 				},
 			},
 			expected: []*unstructured.Unstructured{
-				newUnstructuredConfigMap("test-ns", "test-cm", updatedData),
+				internaltesting.NewUnstructuredConfigMap("test-ns", "test-cm", updatedData),
 			},
 		},
 		{
@@ -175,15 +139,15 @@ func TestUnstructuredObjectReflector(t *testing.T) {
 					ActionImpl: kubetesting.ActionImpl{
 						Namespace: "test-ns",
 						Verb:      "create",
-						Resource:  configMapGVR,
+						Resource:  internaltesting.ConfigMapGVR,
 					},
-					Object: newConfigMap("test-ns", "test-cm", testData),
+					Object: internaltesting.NewConfigMap("test-ns", "test-cm", testData),
 				},
 				kubetesting.DeleteActionImpl{
 					ActionImpl: kubetesting.ActionImpl{
 						Namespace: "test-ns",
 						Verb:      "delete",
-						Resource:  configMapGVR,
+						Resource:  internaltesting.ConfigMapGVR,
 					},
 					Name: "test-cm",
 				},
@@ -199,15 +163,15 @@ func TestUnstructuredObjectReflector(t *testing.T) {
 					ActionImpl: kubetesting.ActionImpl{
 						Namespace: "test-ns",
 						Verb:      "create",
-						Resource:  configMapGVR,
+						Resource:  internaltesting.ConfigMapGVR,
 					},
-					Object: newConfigMap("test-ns", "test-cm", testData),
+					Object: internaltesting.NewConfigMap("test-ns", "test-cm", testData),
 				},
 				kubetesting.PatchActionImpl{
 					ActionImpl: kubetesting.ActionImpl{
 						Namespace: "test-ns",
 						Verb:      "patch",
-						Resource:  configMapGVR,
+						Resource:  internaltesting.ConfigMapGVR,
 					},
 					Name:      "test-cm",
 					PatchType: types.JSONPatchType,
@@ -215,7 +179,7 @@ func TestUnstructuredObjectReflector(t *testing.T) {
 				},
 			},
 			expected: []*unstructured.Unstructured{
-				newUnstructuredConfigMap("test-ns", "test-cm", updatedData),
+				internaltesting.NewUnstructuredConfigMap("test-ns", "test-cm", updatedData),
 			},
 		},
 	}
@@ -230,7 +194,7 @@ func TestUnstructuredObjectReflector(t *testing.T) {
 				reflector(action)
 			}
 
-			objList, err := dynamicClient.Resource(configMapGVR).Namespace("test-ns").
+			objList, err := dynamicClient.Resource(internaltesting.ConfigMapGVR).Namespace("test-ns").
 				List(context.TODO(), metav1.ListOptions{})
 
 			if err != nil {
@@ -248,7 +212,7 @@ func TestUnstructuredObjectReflector(t *testing.T) {
 				name := expectedObj.GetName()
 				ns := expectedObj.GetNamespace()
 
-				gotObj, err := dynamicClient.Resource(configMapGVR).Namespace(ns).
+				gotObj, err := dynamicClient.Resource(internaltesting.ConfigMapGVR).Namespace(ns).
 					Get(context.TODO(), name, metav1.GetOptions{})
 
 				if err != nil {
@@ -294,7 +258,7 @@ func TestCreateNewFakeClients(t *testing.T) {
 	}
 
 	// Fetch unstructured ConfigMap with dynamic client.
-	u, err := dc.Resource(configMapGVR).Namespace(ns).Get(ctx, name, metav1.GetOptions{})
+	u, err := dc.Resource(internaltesting.ConfigMapGVR).Namespace(ns).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("Failed to fetch unstructured ConfigMap: %v", err)
 	}
