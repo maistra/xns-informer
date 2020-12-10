@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	kubeinformers "github.com/maistra/xns-informer/pkg/generated/kube"
-	xnsinfomers "github.com/maistra/xns-informer/pkg/informers"
+	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 )
 
 func main() {
@@ -38,10 +38,10 @@ func main() {
 	namespaces := os.Args[1:]
 	log.Printf("Creating informer for namespaces: %v", namespaces)
 
-	factory := xnsinfomers.NewSharedInformerFactoryWithOptions(
+	factory := xnsinformers.NewSharedInformerFactoryWithOptions(
 		client,
 		resync,
-		xnsinfomers.WithNamespaces(namespaces),
+		xnsinformers.WithNamespaces(namespaces),
 	)
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(factory)

@@ -225,7 +225,7 @@ func (f *multiNamespaceInformerFactory) Start(stopCh <-chan struct{}) {
 	}
 }
 
-// WaitForCacheSync waits for all previously started infomers caches to sync.
+// WaitForCacheSync waits for all previously started informers caches to sync.
 func (f *multiNamespaceInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) {
 	syncFuncs := func() (syncFuncs []cache.InformerSynced) {
 		f.lock.Lock()
