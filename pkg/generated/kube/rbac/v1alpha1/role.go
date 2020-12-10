@@ -18,11 +18,18 @@ var _ informers.RoleInformer = &roleInformer{}
 
 func NewRoleInformer(f xnsinformers.SharedInformerFactory) informers.RoleInformer {
 	resource := v1alpha1.SchemeGroupVersion.WithResource("roles")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1alpha1.Role{},
+		&v1alpha1.RoleList{},
+	)
 
-	return &roleInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.Role{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &roleInformer{informer: informer.Informer()}
 }
 
 func (i *roleInformer) Informer() cache.SharedIndexInformer {

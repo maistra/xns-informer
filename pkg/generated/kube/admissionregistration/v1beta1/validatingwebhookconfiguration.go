@@ -18,11 +18,18 @@ var _ informers.ValidatingWebhookConfigurationInformer = &validatingWebhookConfi
 
 func NewValidatingWebhookConfigurationInformer(f xnsinformers.SharedInformerFactory) informers.ValidatingWebhookConfigurationInformer {
 	resource := v1beta1.SchemeGroupVersion.WithResource("validatingwebhookconfigurations")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta1.ValidatingWebhookConfiguration{},
+		&v1beta1.ValidatingWebhookConfigurationList{},
+	)
 
-	return &validatingWebhookConfigurationInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.ValidatingWebhookConfiguration{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &validatingWebhookConfigurationInformer{informer: informer.Informer()}
 }
 
 func (i *validatingWebhookConfigurationInformer) Informer() cache.SharedIndexInformer {

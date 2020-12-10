@@ -18,11 +18,18 @@ var _ informers.IngressInformer = &ingressInformer{}
 
 func NewIngressInformer(f xnsinformers.SharedInformerFactory) informers.IngressInformer {
 	resource := v1.SchemeGroupVersion.WithResource("ingresses")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.Ingress{},
+		&v1.IngressList{},
+	)
 
-	return &ingressInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Ingress{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &ingressInformer{informer: informer.Informer()}
 }
 
 func (i *ingressInformer) Informer() cache.SharedIndexInformer {

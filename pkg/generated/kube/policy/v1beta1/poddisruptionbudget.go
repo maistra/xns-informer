@@ -18,11 +18,18 @@ var _ informers.PodDisruptionBudgetInformer = &podDisruptionBudgetInformer{}
 
 func NewPodDisruptionBudgetInformer(f xnsinformers.SharedInformerFactory) informers.PodDisruptionBudgetInformer {
 	resource := v1beta1.SchemeGroupVersion.WithResource("poddisruptionbudgets")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta1.PodDisruptionBudget{},
+		&v1beta1.PodDisruptionBudgetList{},
+	)
 
-	return &podDisruptionBudgetInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.PodDisruptionBudget{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &podDisruptionBudgetInformer{informer: informer.Informer()}
 }
 
 func (i *podDisruptionBudgetInformer) Informer() cache.SharedIndexInformer {

@@ -18,11 +18,18 @@ var _ informers.PodInformer = &podInformer{}
 
 func NewPodInformer(f xnsinformers.SharedInformerFactory) informers.PodInformer {
 	resource := v1.SchemeGroupVersion.WithResource("pods")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.Pod{},
+		&v1.PodList{},
+	)
 
-	return &podInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Pod{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &podInformer{informer: informer.Informer()}
 }
 
 func (i *podInformer) Informer() cache.SharedIndexInformer {

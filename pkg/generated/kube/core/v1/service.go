@@ -18,11 +18,18 @@ var _ informers.ServiceInformer = &serviceInformer{}
 
 func NewServiceInformer(f xnsinformers.SharedInformerFactory) informers.ServiceInformer {
 	resource := v1.SchemeGroupVersion.WithResource("services")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.Service{},
+		&v1.ServiceList{},
+	)
 
-	return &serviceInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Service{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &serviceInformer{informer: informer.Informer()}
 }
 
 func (i *serviceInformer) Informer() cache.SharedIndexInformer {

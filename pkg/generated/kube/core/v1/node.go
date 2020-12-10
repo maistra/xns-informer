@@ -18,11 +18,18 @@ var _ informers.NodeInformer = &nodeInformer{}
 
 func NewNodeInformer(f xnsinformers.SharedInformerFactory) informers.NodeInformer {
 	resource := v1.SchemeGroupVersion.WithResource("nodes")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.Node{},
+		&v1.NodeList{},
+	)
 
-	return &nodeInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Node{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &nodeInformer{informer: informer.Informer()}
 }
 
 func (i *nodeInformer) Informer() cache.SharedIndexInformer {

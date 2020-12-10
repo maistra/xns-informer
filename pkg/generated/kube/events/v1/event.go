@@ -18,11 +18,18 @@ var _ informers.EventInformer = &eventInformer{}
 
 func NewEventInformer(f xnsinformers.SharedInformerFactory) informers.EventInformer {
 	resource := v1.SchemeGroupVersion.WithResource("events")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.Event{},
+		&v1.EventList{},
+	)
 
-	return &eventInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Event{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &eventInformer{informer: informer.Informer()}
 }
 
 func (i *eventInformer) Informer() cache.SharedIndexInformer {

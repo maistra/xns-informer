@@ -18,11 +18,18 @@ var _ informers.PodSecurityPolicyInformer = &podSecurityPolicyInformer{}
 
 func NewPodSecurityPolicyInformer(f xnsinformers.SharedInformerFactory) informers.PodSecurityPolicyInformer {
 	resource := v1beta1.SchemeGroupVersion.WithResource("podsecuritypolicies")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta1.PodSecurityPolicy{},
+		&v1beta1.PodSecurityPolicyList{},
+	)
 
-	return &podSecurityPolicyInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.PodSecurityPolicy{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &podSecurityPolicyInformer{informer: informer.Informer()}
 }
 
 func (i *podSecurityPolicyInformer) Informer() cache.SharedIndexInformer {

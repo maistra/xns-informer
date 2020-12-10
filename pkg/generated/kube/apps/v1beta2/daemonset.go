@@ -18,11 +18,18 @@ var _ informers.DaemonSetInformer = &daemonSetInformer{}
 
 func NewDaemonSetInformer(f xnsinformers.SharedInformerFactory) informers.DaemonSetInformer {
 	resource := v1beta2.SchemeGroupVersion.WithResource("daemonsets")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta2.DaemonSet{},
+		&v1beta2.DaemonSetList{},
+	)
 
-	return &daemonSetInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta2.DaemonSet{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &daemonSetInformer{informer: informer.Informer()}
 }
 
 func (i *daemonSetInformer) Informer() cache.SharedIndexInformer {

@@ -18,11 +18,18 @@ var _ informers.ReplicationControllerInformer = &replicationControllerInformer{}
 
 func NewReplicationControllerInformer(f xnsinformers.SharedInformerFactory) informers.ReplicationControllerInformer {
 	resource := v1.SchemeGroupVersion.WithResource("replicationcontrollers")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.ReplicationController{},
+		&v1.ReplicationControllerList{},
+	)
 
-	return &replicationControllerInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.ReplicationController{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &replicationControllerInformer{informer: informer.Informer()}
 }
 
 func (i *replicationControllerInformer) Informer() cache.SharedIndexInformer {

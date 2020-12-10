@@ -18,11 +18,18 @@ var _ informers.ConfigMapInformer = &configMapInformer{}
 
 func NewConfigMapInformer(f xnsinformers.SharedInformerFactory) informers.ConfigMapInformer {
 	resource := v1.SchemeGroupVersion.WithResource("configmaps")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.ConfigMap{},
+		&v1.ConfigMapList{},
+	)
 
-	return &configMapInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.ConfigMap{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &configMapInformer{informer: informer.Informer()}
 }
 
 func (i *configMapInformer) Informer() cache.SharedIndexInformer {

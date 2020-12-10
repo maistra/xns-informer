@@ -18,11 +18,18 @@ var _ informers.StatefulSetInformer = &statefulSetInformer{}
 
 func NewStatefulSetInformer(f xnsinformers.SharedInformerFactory) informers.StatefulSetInformer {
 	resource := v1beta1.SchemeGroupVersion.WithResource("statefulsets")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta1.StatefulSet{},
+		&v1beta1.StatefulSetList{},
+	)
 
-	return &statefulSetInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.StatefulSet{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &statefulSetInformer{informer: informer.Informer()}
 }
 
 func (i *statefulSetInformer) Informer() cache.SharedIndexInformer {

@@ -18,11 +18,18 @@ var _ informers.ReplicaSetInformer = &replicaSetInformer{}
 
 func NewReplicaSetInformer(f xnsinformers.SharedInformerFactory) informers.ReplicaSetInformer {
 	resource := v1beta1.SchemeGroupVersion.WithResource("replicasets")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta1.ReplicaSet{},
+		&v1beta1.ReplicaSetList{},
+	)
 
-	return &replicaSetInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.ReplicaSet{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &replicaSetInformer{informer: informer.Informer()}
 }
 
 func (i *replicaSetInformer) Informer() cache.SharedIndexInformer {

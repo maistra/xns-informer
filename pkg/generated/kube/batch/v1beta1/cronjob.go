@@ -18,11 +18,18 @@ var _ informers.CronJobInformer = &cronJobInformer{}
 
 func NewCronJobInformer(f xnsinformers.SharedInformerFactory) informers.CronJobInformer {
 	resource := v1beta1.SchemeGroupVersion.WithResource("cronjobs")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta1.CronJob{},
+		&v1beta1.CronJobList{},
+	)
 
-	return &cronJobInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.CronJob{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &cronJobInformer{informer: informer.Informer()}
 }
 
 func (i *cronJobInformer) Informer() cache.SharedIndexInformer {

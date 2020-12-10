@@ -18,11 +18,18 @@ var _ informers.DeploymentInformer = &deploymentInformer{}
 
 func NewDeploymentInformer(f xnsinformers.SharedInformerFactory) informers.DeploymentInformer {
 	resource := v1beta2.SchemeGroupVersion.WithResource("deployments")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta2.Deployment{},
+		&v1beta2.DeploymentList{},
+	)
 
-	return &deploymentInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta2.Deployment{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &deploymentInformer{informer: informer.Informer()}
 }
 
 func (i *deploymentInformer) Informer() cache.SharedIndexInformer {

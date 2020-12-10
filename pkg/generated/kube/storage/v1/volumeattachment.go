@@ -18,11 +18,18 @@ var _ informers.VolumeAttachmentInformer = &volumeAttachmentInformer{}
 
 func NewVolumeAttachmentInformer(f xnsinformers.SharedInformerFactory) informers.VolumeAttachmentInformer {
 	resource := v1.SchemeGroupVersion.WithResource("volumeattachments")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.VolumeAttachment{},
+		&v1.VolumeAttachmentList{},
+	)
 
-	return &volumeAttachmentInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.VolumeAttachment{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &volumeAttachmentInformer{informer: informer.Informer()}
 }
 
 func (i *volumeAttachmentInformer) Informer() cache.SharedIndexInformer {

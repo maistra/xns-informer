@@ -18,11 +18,18 @@ var _ informers.LimitRangeInformer = &limitRangeInformer{}
 
 func NewLimitRangeInformer(f xnsinformers.SharedInformerFactory) informers.LimitRangeInformer {
 	resource := v1.SchemeGroupVersion.WithResource("limitranges")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.LimitRange{},
+		&v1.LimitRangeList{},
+	)
 
-	return &limitRangeInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.LimitRange{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &limitRangeInformer{informer: informer.Informer()}
 }
 
 func (i *limitRangeInformer) Informer() cache.SharedIndexInformer {

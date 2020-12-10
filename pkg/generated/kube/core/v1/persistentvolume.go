@@ -18,11 +18,18 @@ var _ informers.PersistentVolumeInformer = &persistentVolumeInformer{}
 
 func NewPersistentVolumeInformer(f xnsinformers.SharedInformerFactory) informers.PersistentVolumeInformer {
 	resource := v1.SchemeGroupVersion.WithResource("persistentvolumes")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.PersistentVolume{},
+		&v1.PersistentVolumeList{},
+	)
 
-	return &persistentVolumeInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.PersistentVolume{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &persistentVolumeInformer{informer: informer.Informer()}
 }
 
 func (i *persistentVolumeInformer) Informer() cache.SharedIndexInformer {

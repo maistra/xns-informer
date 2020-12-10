@@ -18,11 +18,18 @@ var _ informers.JobInformer = &jobInformer{}
 
 func NewJobInformer(f xnsinformers.SharedInformerFactory) informers.JobInformer {
 	resource := v1.SchemeGroupVersion.WithResource("jobs")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.Job{},
+		&v1.JobList{},
+	)
 
-	return &jobInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Job{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &jobInformer{informer: informer.Informer()}
 }
 
 func (i *jobInformer) Informer() cache.SharedIndexInformer {

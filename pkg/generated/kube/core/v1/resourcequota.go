@@ -18,11 +18,18 @@ var _ informers.ResourceQuotaInformer = &resourceQuotaInformer{}
 
 func NewResourceQuotaInformer(f xnsinformers.SharedInformerFactory) informers.ResourceQuotaInformer {
 	resource := v1.SchemeGroupVersion.WithResource("resourcequotas")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.ResourceQuota{},
+		&v1.ResourceQuotaList{},
+	)
 
-	return &resourceQuotaInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.ResourceQuota{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &resourceQuotaInformer{informer: informer.Informer()}
 }
 
 func (i *resourceQuotaInformer) Informer() cache.SharedIndexInformer {

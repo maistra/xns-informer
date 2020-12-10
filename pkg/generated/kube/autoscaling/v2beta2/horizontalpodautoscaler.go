@@ -18,11 +18,18 @@ var _ informers.HorizontalPodAutoscalerInformer = &horizontalPodAutoscalerInform
 
 func NewHorizontalPodAutoscalerInformer(f xnsinformers.SharedInformerFactory) informers.HorizontalPodAutoscalerInformer {
 	resource := v2beta2.SchemeGroupVersion.WithResource("horizontalpodautoscalers")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v2beta2.HorizontalPodAutoscaler{},
+		&v2beta2.HorizontalPodAutoscalerList{},
+	)
 
-	return &horizontalPodAutoscalerInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v2beta2.HorizontalPodAutoscaler{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &horizontalPodAutoscalerInformer{informer: informer.Informer()}
 }
 
 func (i *horizontalPodAutoscalerInformer) Informer() cache.SharedIndexInformer {

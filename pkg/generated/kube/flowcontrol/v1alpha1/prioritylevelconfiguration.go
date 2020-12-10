@@ -18,11 +18,18 @@ var _ informers.PriorityLevelConfigurationInformer = &priorityLevelConfiguration
 
 func NewPriorityLevelConfigurationInformer(f xnsinformers.SharedInformerFactory) informers.PriorityLevelConfigurationInformer {
 	resource := v1alpha1.SchemeGroupVersion.WithResource("prioritylevelconfigurations")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1alpha1.PriorityLevelConfiguration{},
+		&v1alpha1.PriorityLevelConfigurationList{},
+	)
 
-	return &priorityLevelConfigurationInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.PriorityLevelConfiguration{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &priorityLevelConfigurationInformer{informer: informer.Informer()}
 }
 
 func (i *priorityLevelConfigurationInformer) Informer() cache.SharedIndexInformer {

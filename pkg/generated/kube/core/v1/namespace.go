@@ -18,11 +18,18 @@ var _ informers.NamespaceInformer = &namespaceInformer{}
 
 func NewNamespaceInformer(f xnsinformers.SharedInformerFactory) informers.NamespaceInformer {
 	resource := v1.SchemeGroupVersion.WithResource("namespaces")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.Namespace{},
+		&v1.NamespaceList{},
+	)
 
-	return &namespaceInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Namespace{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &namespaceInformer{informer: informer.Informer()}
 }
 
 func (i *namespaceInformer) Informer() cache.SharedIndexInformer {

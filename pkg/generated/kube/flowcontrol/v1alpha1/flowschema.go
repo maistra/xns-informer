@@ -18,11 +18,18 @@ var _ informers.FlowSchemaInformer = &flowSchemaInformer{}
 
 func NewFlowSchemaInformer(f xnsinformers.SharedInformerFactory) informers.FlowSchemaInformer {
 	resource := v1alpha1.SchemeGroupVersion.WithResource("flowschemas")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1alpha1.FlowSchema{},
+		&v1alpha1.FlowSchemaList{},
+	)
 
-	return &flowSchemaInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.FlowSchema{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &flowSchemaInformer{informer: informer.Informer()}
 }
 
 func (i *flowSchemaInformer) Informer() cache.SharedIndexInformer {

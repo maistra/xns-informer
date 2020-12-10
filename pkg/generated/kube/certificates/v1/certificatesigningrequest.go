@@ -18,11 +18,18 @@ var _ informers.CertificateSigningRequestInformer = &certificateSigningRequestIn
 
 func NewCertificateSigningRequestInformer(f xnsinformers.SharedInformerFactory) informers.CertificateSigningRequestInformer {
 	resource := v1.SchemeGroupVersion.WithResource("certificatesigningrequests")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.CertificateSigningRequest{},
+		&v1.CertificateSigningRequestList{},
+	)
 
-	return &certificateSigningRequestInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.CertificateSigningRequest{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &certificateSigningRequestInformer{informer: informer.Informer()}
 }
 
 func (i *certificateSigningRequestInformer) Informer() cache.SharedIndexInformer {
