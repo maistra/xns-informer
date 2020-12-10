@@ -23,7 +23,7 @@ type MultiNamespaceInformer interface {
 }
 
 // NewInformerFunc returns a new informer for a given namespace.
-type NewInformerFunc func(namespace string) informers.GenericInformer
+type NewInformerFunc func(namespace string) cache.SharedIndexInformer
 
 // multiNamespaceGenericInformer satisfies the GenericInformer interface and
 // provides cross-namespace informers and listers.
@@ -47,7 +47,6 @@ func (i *multiNamespaceGenericInformer) Lister() cache.GenericLister {
 // informerData holds a single namespaced informer.
 type informerData struct {
 	informer cache.SharedIndexInformer
-	lister   cache.GenericLister
 	stopCh   chan struct{}
 	started  bool
 }
@@ -90,11 +89,8 @@ func NewMultiNamespaceInformer(namespaced bool, resync time.Duration, newInforme
 	// AddNamespace and RemoveNamespace are no-ops for cluster-scoped
 	// informers.  They watch metav1.NamespaceAll only.
 	if !namespaced {
-		i := newInformer(metav1.NamespaceAll)
-
 		informer.informers[metav1.NamespaceAll] = &informerData{
-			informer: i.Informer(),
-			lister:   i.Lister(),
+			informer: newInformer(metav1.NamespaceAll),
 			stopCh:   make(chan struct{}),
 		}
 	}
@@ -160,12 +156,12 @@ func (i *multiNamespaceInformer) AddNamespace(namespace string) {
 
 	// Add indexers to the new informer.
 	for _, idx := range i.indexers {
-		informer.Informer().AddIndexers(idx)
+		informer.AddIndexers(idx)
 	}
 
 	// Add event handlers to the new informer.
 	for _, handler := range i.eventHandlers {
-		informer.Informer().AddEventHandlerWithResyncPeriod(
+		informer.AddEventHandlerWithResyncPeriod(
 			handler.handler,
 			handler.resyncPeriod,
 		)
@@ -173,15 +169,14 @@ func (i *multiNamespaceInformer) AddNamespace(namespace string) {
 
 	// Add watch error handler.
 	if i.errorHandler != nil {
-		if err := informer.Informer().SetWatchErrorHandler(i.errorHandler); err != nil {
+		if err := informer.SetWatchErrorHandler(i.errorHandler); err != nil {
 			klog.Errorf("Failed to set watch error handler for namespace %q: %v",
 				namespace, err)
 		}
 	}
 
 	i.informers[namespace] = &informerData{
-		informer: informer.Informer(),
-		lister:   informer.Lister(),
+		informer: informer,
 		stopCh:   make(chan struct{}),
 	}
 }
