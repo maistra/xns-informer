@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/dynamic/dynamiclister"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
@@ -72,6 +71,15 @@ func WithCustomResyncConfig(config map[schema.GroupVersionResource]time.Duration
 	}
 }
 
+// Informers are cached by resource version and whether their backing stores are
+// expected to contain unstructured or structured objects.
+type informersCacheKey struct {
+	resource     schema.GroupVersionResource
+	unstructured bool
+}
+
+type informersCache map[informersCacheKey]*multiNamespaceGenericInformer
+
 // multiNamespaceInformerFactory provides a dynamic informer factory that
 // creates informers which track changes across a set of namespaces.
 type multiNamespaceInformerFactory struct {
@@ -83,8 +91,8 @@ type multiNamespaceInformerFactory struct {
 	tweakListOptions dynamicinformer.TweakListOptionsFunc
 	customResync     map[schema.GroupVersionResource]time.Duration
 
-	// Map of created informers by resource type.
-	informers map[schema.GroupVersionResource]*multiNamespaceGenericInformer
+	// Cache of previously created informers.
+	informers informersCache
 }
 
 var _ SharedInformerFactory = &multiNamespaceInformerFactory{}
@@ -105,7 +113,7 @@ func NewSharedInformerFactoryWithOptions(client dynamic.Interface, resync time.D
 		client:       client,
 		scheme:       scheme.Scheme,
 		resyncPeriod: resync,
-		informers:    make(map[schema.GroupVersionResource]*multiNamespaceGenericInformer),
+		informers:    make(informersCache),
 		customResync: make(map[schema.GroupVersionResource]time.Duration),
 	}
 
@@ -163,8 +171,15 @@ func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResou
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
+	// The key for the informers cached is comprised of the resource type and
+	// whether the cache is expected to hold unstructured objects.
+	cacheKey := informersCacheKey{
+		resource:     gvr,
+		unstructured: opts.ListWatchConverter == nil,
+	}
+
 	// Return existing informer if found.
-	if informer, ok := f.informers[gvr]; ok {
+	if informer, ok := f.informers[cacheKey]; ok {
 		return informer
 	}
 
@@ -210,18 +225,18 @@ func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResou
 	}
 
 	informer := NewMultiNamespaceInformer(!opts.ClusterScoped, f.resyncPeriod, newInformerFunc)
-	lister := dynamiclister.New(informer.GetIndexer(), gvr)
+	lister := cache.NewGenericLister(informer.GetIndexer(), gvr.GroupResource())
 
 	for namespace := range f.namespaces {
 		informer.AddNamespace(namespace)
 	}
 
-	f.informers[gvr] = &multiNamespaceGenericInformer{
+	f.informers[cacheKey] = &multiNamespaceGenericInformer{
 		informer: informer,
-		lister:   dynamiclister.NewRuntimeObjectShim(lister),
+		lister:   lister,
 	}
 
-	return f.informers[gvr]
+	return f.informers[cacheKey]
 }
 
 // Start starts all of the informers the factory has created to this point.
