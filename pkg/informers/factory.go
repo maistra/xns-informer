@@ -140,9 +140,9 @@ func (f *multiNamespaceInformerFactory) SetNamespaces(namespaces []string) {
 
 	newNamespaceSet := sets.NewSet(namespaces...)
 
-	// If the set of namespaces, includes metav1.NamespaceAll, then it
-	// only makes sense to create a single informer for that.
-	if newNamespaceSet.Contains(metav1.NamespaceAll) {
+	// If the set of namespaces is empty or includes metav1.NamespaceAll, then
+	// it only makes sense to create a single informer for that.
+	if len(newNamespaceSet) == 0 || newNamespaceSet.Contains(metav1.NamespaceAll) {
 		newNamespaceSet = sets.NewSet(metav1.NamespaceAll)
 	}
 
