@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
@@ -45,8 +44,8 @@ func TestEventHandlers(t *testing.T) {
 		t.Fatalf("Client setup failed: %v", err)
 	}
 
-	informer := NewMultiNamespaceInformer(true, 0, func(namespace string) informers.GenericInformer {
-		return dynamicinformer.NewFilteredDynamicInformer(
+	informer := NewMultiNamespaceInformer(true, 0, func(namespace string) cache.SharedIndexInformer {
+		i := dynamicinformer.NewFilteredDynamicInformer(
 			dynamic,
 			configMapGVR,
 			namespace,
@@ -54,6 +53,8 @@ func TestEventHandlers(t *testing.T) {
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 			nil,
 		)
+
+		return i.Informer()
 	})
 
 	informer.AddNamespace(ns)

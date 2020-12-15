@@ -18,11 +18,18 @@ var _ informers.RuntimeClassInformer = &runtimeClassInformer{}
 
 func NewRuntimeClassInformer(f xnsinformers.SharedInformerFactory) informers.RuntimeClassInformer {
 	resource := v1alpha1.SchemeGroupVersion.WithResource("runtimeclasses")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1alpha1.RuntimeClass{},
+		&v1alpha1.RuntimeClassList{},
+	)
 
-	return &runtimeClassInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.RuntimeClass{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &runtimeClassInformer{informer: informer.Informer()}
 }
 
 func (i *runtimeClassInformer) Informer() cache.SharedIndexInformer {

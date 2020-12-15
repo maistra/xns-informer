@@ -18,11 +18,18 @@ var _ informers.PersistentVolumeClaimInformer = &persistentVolumeClaimInformer{}
 
 func NewPersistentVolumeClaimInformer(f xnsinformers.SharedInformerFactory) informers.PersistentVolumeClaimInformer {
 	resource := v1.SchemeGroupVersion.WithResource("persistentvolumeclaims")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.PersistentVolumeClaim{},
+		&v1.PersistentVolumeClaimList{},
+	)
 
-	return &persistentVolumeClaimInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.PersistentVolumeClaim{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &persistentVolumeClaimInformer{informer: informer.Informer()}
 }
 
 func (i *persistentVolumeClaimInformer) Informer() cache.SharedIndexInformer {

@@ -18,11 +18,18 @@ var _ informers.PriorityClassInformer = &priorityClassInformer{}
 
 func NewPriorityClassInformer(f xnsinformers.SharedInformerFactory) informers.PriorityClassInformer {
 	resource := v1.SchemeGroupVersion.WithResource("priorityclasses")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.PriorityClass{},
+		&v1.PriorityClassList{},
+	)
 
-	return &priorityClassInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.PriorityClass{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &priorityClassInformer{informer: informer.Informer()}
 }
 
 func (i *priorityClassInformer) Informer() cache.SharedIndexInformer {

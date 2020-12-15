@@ -18,11 +18,18 @@ var _ informers.NetworkPolicyInformer = &networkPolicyInformer{}
 
 func NewNetworkPolicyInformer(f xnsinformers.SharedInformerFactory) informers.NetworkPolicyInformer {
 	resource := v1beta1.SchemeGroupVersion.WithResource("networkpolicies")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta1.NetworkPolicy{},
+		&v1beta1.NetworkPolicyList{},
+	)
 
-	return &networkPolicyInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.NetworkPolicy{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &networkPolicyInformer{informer: informer.Informer()}
 }
 
 func (i *networkPolicyInformer) Informer() cache.SharedIndexInformer {

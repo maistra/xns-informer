@@ -18,11 +18,18 @@ var _ informers.SecretInformer = &secretInformer{}
 
 func NewSecretInformer(f xnsinformers.SharedInformerFactory) informers.SecretInformer {
 	resource := v1.SchemeGroupVersion.WithResource("secrets")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.Secret{},
+		&v1.SecretList{},
+	)
 
-	return &secretInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Secret{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &secretInformer{informer: informer.Informer()}
 }
 
 func (i *secretInformer) Informer() cache.SharedIndexInformer {

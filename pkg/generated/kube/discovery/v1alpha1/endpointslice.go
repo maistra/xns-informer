@@ -18,11 +18,18 @@ var _ informers.EndpointSliceInformer = &endpointSliceInformer{}
 
 func NewEndpointSliceInformer(f xnsinformers.SharedInformerFactory) informers.EndpointSliceInformer {
 	resource := v1alpha1.SchemeGroupVersion.WithResource("endpointslices")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1alpha1.EndpointSlice{},
+		&v1alpha1.EndpointSliceList{},
+	)
 
-	return &endpointSliceInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.EndpointSlice{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &endpointSliceInformer{informer: informer.Informer()}
 }
 
 func (i *endpointSliceInformer) Informer() cache.SharedIndexInformer {

@@ -18,11 +18,18 @@ var _ informers.MutatingWebhookConfigurationInformer = &mutatingWebhookConfigura
 
 func NewMutatingWebhookConfigurationInformer(f xnsinformers.SharedInformerFactory) informers.MutatingWebhookConfigurationInformer {
 	resource := v1beta1.SchemeGroupVersion.WithResource("mutatingwebhookconfigurations")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta1.MutatingWebhookConfiguration{},
+		&v1beta1.MutatingWebhookConfigurationList{},
+	)
 
-	return &mutatingWebhookConfigurationInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.MutatingWebhookConfiguration{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &mutatingWebhookConfigurationInformer{informer: informer.Informer()}
 }
 
 func (i *mutatingWebhookConfigurationInformer) Informer() cache.SharedIndexInformer {

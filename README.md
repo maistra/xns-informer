@@ -31,10 +31,10 @@ An example of creating an informer for ConfigMap resources:
 ```golang
 // Create a new shared informer factory.
 // Assume client is a dynamic.Interface Kubernetes client.
-factory := xnsinfomers.NewSharedInformerFactoryWithOptions(
+factory := xnsinformers.NewSharedInformerFactoryWithOptions(
 	client,
 	1*time.Minute,
-	xnsinfomers.WithNamespaces([]string{"default", "application"}),
+	xnsinformers.WithNamespaces([]string{"default", "application"}),
 )
 
 // Create an informer for ConfigMap resources.

@@ -1,16 +1,18 @@
 package informers
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	"github.com/maistra/xns-informer/pkg/internal/sets"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/dynamic/dynamiclister"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
@@ -20,11 +22,16 @@ import (
 // works across a set of namespaces, which can be updated at any time.
 type SharedInformerFactory interface {
 	Start(stopCh <-chan struct{})
-	ClusterResource(resource schema.GroupVersionResource) informers.GenericInformer
-	NamespacedResource(resource schema.GroupVersionResource) informers.GenericInformer
+	ForResource(gvr schema.GroupVersionResource, opts ResourceOptions) informers.GenericInformer
 	WaitForCacheSync(stopCh <-chan struct{})
 	SetNamespaces(namespaces []string)
 	GetScheme() *runtime.Scheme
+}
+
+// ResourceOptions represents optional parameters to the ForResource method.
+type ResourceOptions struct {
+	ClusterScoped      bool
+	ListWatchConverter *ListWatchConverter
 }
 
 // SharedInformerOption is a functional option for a SharedInformerFactory.
@@ -64,6 +71,15 @@ func WithCustomResyncConfig(config map[schema.GroupVersionResource]time.Duration
 	}
 }
 
+// Informers are cached by resource version and whether their backing stores are
+// expected to contain unstructured or structured objects.
+type informersCacheKey struct {
+	resource     schema.GroupVersionResource
+	unstructured bool
+}
+
+type informersCache map[informersCacheKey]*multiNamespaceGenericInformer
+
 // multiNamespaceInformerFactory provides a dynamic informer factory that
 // creates informers which track changes across a set of namespaces.
 type multiNamespaceInformerFactory struct {
@@ -75,8 +91,8 @@ type multiNamespaceInformerFactory struct {
 	tweakListOptions dynamicinformer.TweakListOptionsFunc
 	customResync     map[schema.GroupVersionResource]time.Duration
 
-	// Map of created informers by resource type.
-	informers map[schema.GroupVersionResource]*multiNamespaceGenericInformer
+	// Cache of previously created informers.
+	informers informersCache
 }
 
 var _ SharedInformerFactory = &multiNamespaceInformerFactory{}
@@ -97,7 +113,7 @@ func NewSharedInformerFactoryWithOptions(client dynamic.Interface, resync time.D
 		client:       client,
 		scheme:       scheme.Scheme,
 		resyncPeriod: resync,
-		informers:    make(map[schema.GroupVersionResource]*multiNamespaceGenericInformer),
+		informers:    make(informersCache),
 		customResync: make(map[schema.GroupVersionResource]time.Duration),
 	}
 
@@ -148,30 +164,22 @@ func (f *multiNamespaceInformerFactory) SetNamespaces(namespaces []string) {
 	}
 }
 
-// ClusterResource returns a new cross-namespace informer for the given resource
-// type and assumes it is cluster-scoped.  This means the returned informer will
-// treat AddNamespace and RemoveNamespace as no-ops.
-func (f *multiNamespaceInformerFactory) ClusterResource(gvr schema.GroupVersionResource) informers.GenericInformer {
-	return f.ForResource(gvr, false)
-}
-
-// NamespacedResource returns a new cross-namespace informer for the given
-// resource type and assumes it is namespaced.  Requesting a cluster-scoped
-// resource via this method will result in errors from the underlying watch and
-// will produce no events.
-func (f *multiNamespaceInformerFactory) NamespacedResource(gvr schema.GroupVersionResource) informers.GenericInformer {
-	return f.ForResource(gvr, true)
-}
-
 // ForResource returns a new cross-namespace informer for the given resource
 // type.  If an informer for this resource type has been previously requested,
 // it will be returned, otherwise a new one will be created.
-func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResource, namespaced bool) informers.GenericInformer {
+func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResource, opts ResourceOptions) informers.GenericInformer {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
+	// The key for the informers cached is comprised of the resource type and
+	// whether the cache is expected to hold unstructured objects.
+	cacheKey := informersCacheKey{
+		resource:     gvr,
+		unstructured: opts.ListWatchConverter == nil,
+	}
+
 	// Return existing informer if found.
-	if informer, ok := f.informers[gvr]; ok {
+	if informer, ok := f.informers[cacheKey]; ok {
 		return informer
 	}
 
@@ -181,36 +189,54 @@ func (f *multiNamespaceInformerFactory) ForResource(gvr schema.GroupVersionResou
 		resyncPeriod = f.resyncPeriod
 	}
 
-	newInformerFunc := func(namespace string) informers.GenericInformer {
+	newInformerFunc := func(namespace string) cache.SharedIndexInformer {
 		// Namespace argument is ignored for cluster-scoped resources.
-		// TODO: Should we use the discovery API to determine resource scope?
-		if !namespaced {
+		if opts.ClusterScoped {
 			namespace = metav1.NamespaceAll
 		}
 
-		return dynamicinformer.NewFilteredDynamicInformer(
-			f.client,
-			gvr,
-			namespace,
+		lw := &cache.ListWatch{
+			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+				if f.tweakListOptions != nil {
+					f.tweakListOptions(&opts)
+				}
+				return f.client.Resource(gvr).Namespace(namespace).List(context.TODO(), opts)
+			},
+			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+				if f.tweakListOptions != nil {
+					f.tweakListOptions(&opts)
+				}
+				return f.client.Resource(gvr).Namespace(namespace).Watch(context.TODO(), opts)
+			},
+		}
+
+		var obj runtime.Object = &unstructured.Unstructured{}
+
+		if opts.ListWatchConverter != nil {
+			lw = opts.ListWatchConverter.Wrap(lw)
+			obj = opts.ListWatchConverter.NewObject()
+		}
+
+		return cache.NewSharedIndexInformer(
+			lw, obj,
 			resyncPeriod,
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-			f.tweakListOptions,
 		)
 	}
 
-	informer := NewMultiNamespaceInformer(namespaced, f.resyncPeriod, newInformerFunc)
-	lister := dynamiclister.New(informer.GetIndexer(), gvr)
+	informer := NewMultiNamespaceInformer(!opts.ClusterScoped, f.resyncPeriod, newInformerFunc)
+	lister := cache.NewGenericLister(informer.GetIndexer(), gvr.GroupResource())
 
 	for namespace := range f.namespaces {
 		informer.AddNamespace(namespace)
 	}
 
-	f.informers[gvr] = &multiNamespaceGenericInformer{
+	f.informers[cacheKey] = &multiNamespaceGenericInformer{
 		informer: informer,
-		lister:   dynamiclister.NewRuntimeObjectShim(lister),
+		lister:   lister,
 	}
 
-	return f.informers[gvr]
+	return f.informers[cacheKey]
 }
 
 // Start starts all of the informers the factory has created to this point.
@@ -225,7 +251,7 @@ func (f *multiNamespaceInformerFactory) Start(stopCh <-chan struct{}) {
 	}
 }
 
-// WaitForCacheSync waits for all previously started infomers caches to sync.
+// WaitForCacheSync waits for all previously started informers caches to sync.
 func (f *multiNamespaceInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) {
 	syncFuncs := func() (syncFuncs []cache.InformerSynced) {
 		f.lock.Lock()

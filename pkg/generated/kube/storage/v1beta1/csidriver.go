@@ -18,11 +18,18 @@ var _ informers.CSIDriverInformer = &cSIDriverInformer{}
 
 func NewCSIDriverInformer(f xnsinformers.SharedInformerFactory) informers.CSIDriverInformer {
 	resource := v1beta1.SchemeGroupVersion.WithResource("csidrivers")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta1.CSIDriver{},
+		&v1beta1.CSIDriverList{},
+	)
 
-	return &cSIDriverInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.CSIDriver{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &cSIDriverInformer{informer: informer.Informer()}
 }
 
 func (i *cSIDriverInformer) Informer() cache.SharedIndexInformer {

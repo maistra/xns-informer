@@ -18,11 +18,18 @@ var _ informers.CSIStorageCapacityInformer = &cSIStorageCapacityInformer{}
 
 func NewCSIStorageCapacityInformer(f xnsinformers.SharedInformerFactory) informers.CSIStorageCapacityInformer {
 	resource := v1alpha1.SchemeGroupVersion.WithResource("csistoragecapacities")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1alpha1.CSIStorageCapacity{},
+		&v1alpha1.CSIStorageCapacityList{},
+	)
 
-	return &cSIStorageCapacityInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1alpha1.CSIStorageCapacity{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &cSIStorageCapacityInformer{informer: informer.Informer()}
 }
 
 func (i *cSIStorageCapacityInformer) Informer() cache.SharedIndexInformer {

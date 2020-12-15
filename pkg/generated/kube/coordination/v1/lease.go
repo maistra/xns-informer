@@ -18,11 +18,18 @@ var _ informers.LeaseInformer = &leaseInformer{}
 
 func NewLeaseInformer(f xnsinformers.SharedInformerFactory) informers.LeaseInformer {
 	resource := v1.SchemeGroupVersion.WithResource("leases")
-	informer := f.NamespacedResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.Lease{},
+		&v1.LeaseList{},
+	)
 
-	return &leaseInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.Lease{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      false,
+		ListWatchConverter: converter,
+	})
+
+	return &leaseInformer{informer: informer.Informer()}
 }
 
 func (i *leaseInformer) Informer() cache.SharedIndexInformer {

@@ -18,11 +18,18 @@ var _ informers.ClusterRoleBindingInformer = &clusterRoleBindingInformer{}
 
 func NewClusterRoleBindingInformer(f xnsinformers.SharedInformerFactory) informers.ClusterRoleBindingInformer {
 	resource := v1beta1.SchemeGroupVersion.WithResource("clusterrolebindings")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1beta1.ClusterRoleBinding{},
+		&v1beta1.ClusterRoleBindingList{},
+	)
 
-	return &clusterRoleBindingInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1beta1.ClusterRoleBinding{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &clusterRoleBindingInformer{informer: informer.Informer()}
 }
 
 func (i *clusterRoleBindingInformer) Informer() cache.SharedIndexInformer {

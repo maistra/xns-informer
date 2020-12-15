@@ -60,15 +60,22 @@ var _ informers.$.type|public$Informer = &$.type|private$Informer{}
 
 func New$.type|public$Informer(f xnsinformers.SharedInformerFactory) informers.$.type|public$Informer {
     resource := $.version$.SchemeGroupVersion.WithResource("$.type|allLowercasePlural$")
-$- if .namespaced$
-	informer := f.NamespacedResource(resource).Informer()
-$- else$
-    informer := f.ClusterResource(resource).Informer()
-$- end$
+    converter := xnsinformers.NewListWatchConverter(
+        f.GetScheme(),
+        &$.version$.$.type|public${},
+        &$.version$.$.type|public$List{},
+    )
 
-    return &$.type|private$Informer{
-        informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &$.version$.$.type|public${}),
-    }
+    informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+$- if .namespaced$
+        ClusterScoped:      false,
+$- else$
+        ClusterScoped:      true,
+$- end$
+        ListWatchConverter: converter,
+    })
+
+    return &$.type|private$Informer{informer: informer.Informer()}
 }
 
 func (i *$.type|private$Informer) Informer() cache.SharedIndexInformer {

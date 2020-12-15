@@ -18,11 +18,18 @@ var _ informers.StorageClassInformer = &storageClassInformer{}
 
 func NewStorageClassInformer(f xnsinformers.SharedInformerFactory) informers.StorageClassInformer {
 	resource := v1.SchemeGroupVersion.WithResource("storageclasses")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.StorageClass{},
+		&v1.StorageClassList{},
+	)
 
-	return &storageClassInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.StorageClass{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &storageClassInformer{informer: informer.Informer()}
 }
 
 func (i *storageClassInformer) Informer() cache.SharedIndexInformer {

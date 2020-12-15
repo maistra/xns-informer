@@ -18,11 +18,18 @@ var _ informers.ComponentStatusInformer = &componentStatusInformer{}
 
 func NewComponentStatusInformer(f xnsinformers.SharedInformerFactory) informers.ComponentStatusInformer {
 	resource := v1.SchemeGroupVersion.WithResource("componentstatuses")
-	informer := f.ClusterResource(resource).Informer()
+	converter := xnsinformers.NewListWatchConverter(
+		f.GetScheme(),
+		&v1.ComponentStatus{},
+		&v1.ComponentStatusList{},
+	)
 
-	return &componentStatusInformer{
-		informer: xnsinformers.NewInformerConverter(f.GetScheme(), informer, &v1.ComponentStatus{}),
-	}
+	informer := f.ForResource(resource, xnsinformers.ResourceOptions{
+		ClusterScoped:      true,
+		ListWatchConverter: converter,
+	})
+
+	return &componentStatusInformer{informer: informer.Informer()}
 }
 
 func (i *componentStatusInformer) Informer() cache.SharedIndexInformer {
