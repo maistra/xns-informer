@@ -39,7 +39,7 @@ func TestEventHandlers(t *testing.T) {
 	updateFuncCalled := false
 	deleteFuncCalled := false
 
-	client, dynamic, err := informertesting.NewFakeClients(scheme.Scheme)
+	client, dynamic, _, err := informertesting.NewFakeClients(scheme.Scheme)
 	if err != nil {
 		t.Fatalf("Client setup failed: %v", err)
 	}

@@ -9,6 +9,7 @@ import (
 	"k8s.io/gengo/types"
 
 	"k8s.io/code-generator/cmd/client-gen/generators/util"
+	clientgentypes "k8s.io/code-generator/cmd/client-gen/types"
 )
 
 type informerGenerator struct {
@@ -16,7 +17,7 @@ type informerGenerator struct {
 	imports          namer.ImportTracker
 	listersPackage   string
 	informersPackage string
-	groupVersion     GroupVersion
+	groupVersion     clientgentypes.GroupVersion
 	typeToGenerate   *types.Type
 }
 

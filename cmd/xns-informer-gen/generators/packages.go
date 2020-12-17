@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"k8s.io/code-generator/cmd/client-gen/generators/util"
+	clientgentypes "k8s.io/code-generator/cmd/client-gen/types"
 	"k8s.io/klog/v2"
 
 	"k8s.io/gengo/args"
@@ -25,11 +26,6 @@ const xnsinformersPkg = "github.com/maistra/xns-informer/pkg/informers"
 type CustomArgs struct {
 	ListersPackage   string
 	InformersPackage string
-}
-
-type GroupVersion struct {
-	Group   string
-	Version string
 }
 
 // NameSystems returns the name system used by the generators in this package.
@@ -55,10 +51,17 @@ func Packages(c *generator.Context, args *args.GeneratorArgs) generator.Packages
 	}
 
 	var packages []generator.Package
-	groupVersions := make(map[string][]string)
+	groupVersions := make(map[string]clientgentypes.GroupVersions)
+	typesForGroupVersion := make(map[clientgentypes.GroupVersion][]*types.Type)
+	groupGoNames := make(map[string]string)
 
 	for _, inputDir := range args.InputDirs {
 		p := c.Universe.Package(inputDir)
+
+		gv := clientgentypes.GroupVersion{}
+		parts := strings.Split(p.Path, "/")
+		gv.Group = clientgentypes.Group(parts[len(parts)-2])
+		gv.Version = clientgentypes.Version(parts[len(parts)-1])
 
 		typesToGenerate := make([]*types.Type, 0)
 		for _, t := range p.Types {
@@ -68,6 +71,11 @@ func Packages(c *generator.Context, args *args.GeneratorArgs) generator.Packages
 			}
 
 			typesToGenerate = append(typesToGenerate, t)
+
+			if _, ok := typesForGroupVersion[gv]; !ok {
+				typesForGroupVersion[gv] = []*types.Type{}
+			}
+			typesForGroupVersion[gv] = append(typesForGroupVersion[gv], t)
 		}
 
 		if len(typesToGenerate) == 0 {
@@ -78,23 +86,32 @@ func Packages(c *generator.Context, args *args.GeneratorArgs) generator.Packages
 			return typesToGenerate[i].Name.Name < typesToGenerate[j].Name.Name
 		})
 
-		gv := GroupVersion{}
-		parts := strings.Split(p.Path, "/")
-		gv.Group = parts[len(parts)-2]
-		gv.Version = parts[len(parts)-1]
+		groupPackageName := gv.Group.NonEmpty()
+		gvPackage := path.Clean(p.Path)
 
-		if _, ok := groupVersions[gv.Group]; !ok {
-			groupVersions[gv.Group] = make([]string, 0)
+		// If there's a comment of the form "// +groupGoName=SomeUniqueShortName", use that as
+		// the Go group identifier in CamelCase. It defaults
+		groupGoNames[groupPackageName] = namer.IC(strings.Split(gv.Group.NonEmpty(), ".")[0])
+		if override := types.ExtractCommentTags("+", p.Comments)["groupGoName"]; override != nil {
+			groupGoNames[groupPackageName] = namer.IC(override[0])
 		}
 
-		groupVersions[gv.Group] = append(groupVersions[gv.Group], gv.Version)
+		groupVersionsEntry, ok := groupVersions[groupPackageName]
+		if !ok {
+			groupVersionsEntry = clientgentypes.GroupVersions{
+				PackageName: groupPackageName,
+				Group:       gv.Group,
+			}
+		}
+		groupVersionsEntry.Versions = append(groupVersionsEntry.Versions, clientgentypes.PackageVersion{Version: gv.Version, Package: gvPackage})
+		groupVersions[groupPackageName] = groupVersionsEntry
 
-		listersPkg := path.Join(customArgs.ListersPackage, gv.Group, gv.Version)
-		informersPkg := path.Join(customArgs.InformersPackage, gv.Group, gv.Version)
-		outputPath := filepath.Join(gv.Group, gv.Version)
+		listersPkg := path.Join(customArgs.ListersPackage, groupPackageName, gv.Version.NonEmpty())
+		informersPkg := path.Join(customArgs.InformersPackage, groupPackageName, gv.Version.NonEmpty())
+		outputPath := filepath.Join(groupPackageName, string(gv.Version))
 
 		packages = append(packages, &generator.DefaultPackage{
-			PackageName: gv.Version,
+			PackageName: string(gv.Version),
 			PackagePath: outputPath,
 			HeaderText:  headerText,
 
@@ -127,10 +144,10 @@ func Packages(c *generator.Context, args *args.GeneratorArgs) generator.Packages
 		})
 	}
 
-	for group := range groupVersions {
-		versions := groupVersions[group]
-		sort.Strings(versions)
-
+	for group, versions := range groupVersions {
+		// need to create our own vars to capture in closure below
+		groupName := group
+		gvs := versions
 		outputPackage := path.Join(args.OutputPackagePath, group)
 		packages = append(packages, &generator.DefaultPackage{
 			PackageName: group,
@@ -142,8 +159,8 @@ func Packages(c *generator.Context, args *args.GeneratorArgs) generator.Packages
 					DefaultGen: generator.DefaultGen{
 						OptionalName: "interface",
 					},
-					group:         group,
-					versions:      versions,
+					group:         groupName,
+					versions:      gvs,
 					outputPackage: outputPackage,
 					imports:       generator.NewImportTracker(),
 				})
@@ -172,6 +189,18 @@ func Packages(c *generator.Context, args *args.GeneratorArgs) generator.Packages
 				groups:        groups,
 				outputPackage: args.OutputPackagePath,
 				imports:       generator.NewImportTracker(),
+			})
+
+			generators = append(generators, &genericGenerator{
+				DefaultGen: generator.DefaultGen{
+					OptionalName: "generic",
+				},
+				outputPackage:        args.OutputPackagePath,
+				imports:              generator.NewImportTracker(),
+				groupVersions:        groupVersions,
+				pluralExceptions:     pluralExceptions,
+				typesForGroupVersion: typesForGroupVersion,
+				groupGoNames:         groupGoNames,
 			})
 			return generators
 		},

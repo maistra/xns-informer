@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	clientgentypes "k8s.io/code-generator/cmd/client-gen/types"
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/types"
 )
@@ -11,7 +12,7 @@ import (
 type versionInterfaceGenerator struct {
 	generator.DefaultGen
 	informersPackage string
-	groupVersion     GroupVersion
+	groupVersion     clientgentypes.GroupVersion
 	types            []*types.Type
 }
 

@@ -5,6 +5,7 @@ import (
 	"io"
 	"path/filepath"
 
+	clientgentypes "k8s.io/code-generator/cmd/client-gen/types"
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
@@ -14,7 +15,7 @@ type groupInterfaceGenerator struct {
 	generator.DefaultGen
 	outputPackage string
 	group         string
-	versions      []string
+	versions      clientgentypes.GroupVersions
 	imports       namer.ImportTracker
 }
 
@@ -39,7 +40,8 @@ func (g *groupInterfaceGenerator) Imports(c *generator.Context) (imports []strin
 func (g *groupInterfaceGenerator) Init(c *generator.Context, w io.Writer) error {
 	versions := []versionData{}
 
-	for _, v := range g.versions {
+	for _, version := range g.versions.Versions {
+		v := version.Version.NonEmpty()
 		if v == "" {
 			continue
 		}
