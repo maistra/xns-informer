@@ -40,6 +40,9 @@ factory := xnsinformers.NewSharedInformerFactoryWithOptions(
 // Create an informer for ConfigMap resources.
 resource := corev1.SchemeGroupVersion.WithResource("configmaps")
 informer := factory.NamespacedResource(resource)
+informer := factory.ForResource(resource, xnsinformers.ResourceOptions{
+    ClusterScoped: false,
+})
 
 // Add an event handler to the new informer.
 informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
