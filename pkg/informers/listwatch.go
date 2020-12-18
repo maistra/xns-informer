@@ -58,7 +58,33 @@ func (c *ListWatchConverter) lister(lf cache.ListFunc) cache.ListFunc {
 			return nil, err
 		}
 
-		return c.convert(list)
+		var items []runtime.Object
+		err = apimeta.EachListItem(list, func(obj runtime.Object) error {
+			converted, err := c.convert(obj)
+			if err != nil {
+				return err
+			}
+
+			items = append(items, converted)
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		newList := c.NewList()
+		gvk := list.GetObjectKind().GroupVersionKind()
+		newList.GetObjectKind().SetGroupVersionKind(gvk)
+
+		if err := copyListMeta(list, newList); err != nil {
+			return nil, err
+		}
+
+		if err := apimeta.SetList(newList, items); err != nil {
+			return nil, err
+		}
+
+		return newList, nil
 	}
 }
 
@@ -102,4 +128,24 @@ func (c *ListWatchConverter) convert(in runtime.Object) (runtime.Object, error) 
 	}
 
 	return out, nil
+}
+
+// TODO: There is almost certainly a better way to do this...
+func copyListMeta(src, dest runtime.Object) error {
+	srcMeta, err := apimeta.ListAccessor(src)
+	if err != nil {
+		return err
+	}
+
+	destMeta, err := apimeta.ListAccessor(src)
+	if err != nil {
+		return err
+	}
+
+	destMeta.SetResourceVersion(srcMeta.GetResourceVersion())
+	destMeta.SetSelfLink(srcMeta.GetSelfLink())
+	destMeta.SetContinue(srcMeta.GetContinue())
+	destMeta.SetRemainingItemCount(srcMeta.GetRemainingItemCount())
+
+	return nil
 }
