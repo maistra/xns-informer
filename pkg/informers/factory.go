@@ -23,7 +23,7 @@ import (
 type SharedInformerFactory interface {
 	Start(stopCh <-chan struct{})
 	ForResource(gvr schema.GroupVersionResource, opts ResourceOptions) informers.GenericInformer
-	WaitForCacheSync(stopCh <-chan struct{})
+	WaitForCacheSync(stopCh <-chan struct{}) bool
 	SetNamespaces(namespaces []string)
 	GetScheme() *runtime.Scheme
 }
@@ -252,7 +252,7 @@ func (f *multiNamespaceInformerFactory) Start(stopCh <-chan struct{}) {
 }
 
 // WaitForCacheSync waits for all previously started informers caches to sync.
-func (f *multiNamespaceInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) {
+func (f *multiNamespaceInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) bool {
 	syncFuncs := func() (syncFuncs []cache.InformerSynced) {
 		f.lock.Lock()
 		defer f.lock.Unlock()
@@ -264,5 +264,5 @@ func (f *multiNamespaceInformerFactory) WaitForCacheSync(stopCh <-chan struct{})
 		return
 	}
 
-	cache.WaitForCacheSync(stopCh, syncFuncs()...)
+	return cache.WaitForCacheSync(stopCh, syncFuncs()...)
 }
