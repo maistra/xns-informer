@@ -18,7 +18,7 @@ require (
 	golang.org/x/tools v0.0.0-20200930213115-e57f6d466a48 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
-	istio.io/api v0.0.0-20201215013001-d474186cff8d
+	istio.io/api v0.0.0-20201123152548-197f11e4ea09
 	istio.io/client-go v1.8.1
 	k8s.io/api v0.19.2
 	k8s.io/apimachinery v0.19.2
