@@ -5,5 +5,12 @@ test:
 	go vet ./...
 	go test -v ./...
 
-update-codegen:
+gen: build
 	./hack/update-codegen.sh
+
+gen-check: gen check-clean-repo
+
+check-clean-repo:
+	@./hack/check_clean_repo.sh
+
+.PHONY: build test gen gen-check check-clean-repo
