@@ -65,6 +65,10 @@ istio_group_versions=(
   istio.io/client-go/pkg/apis/security/v1beta1
 )
 
+service_apis_group_versions=(
+  sigs.k8s.io/service-apis/apis/v1alpha1
+)
+
 "${PROJ_ROOT}/out/xns-informer-gen" \
 	-v 2 \
 	-o "${PROJ_ROOT}/pkg/generated/kube" \
@@ -78,3 +82,11 @@ istio_group_versions=(
 	-o "${PROJ_ROOT}/pkg/generated/istio" \
 	-p 'github.com/maistra/xns-informer/pkg/generated/istio' \
 	-i "$(join_by , ${istio_group_versions[@]})"
+
+"${PROJ_ROOT}/out/xns-informer-gen" \
+  --listers-package "sigs.k8s.io/service-apis/pkg/client/listers" \
+  --informers-package "sigs.k8s.io/service-apis/pkg/client/informers/externalversions" \
+	-v 2 \
+	-o "${PROJ_ROOT}/pkg/generated/serviceapis" \
+	-p 'github.com/maistra/xns-informer/pkg/generated/serviceapis' \
+	-i "$(join_by , ${service_apis_group_versions[@]})"
