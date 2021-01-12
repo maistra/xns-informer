@@ -7,7 +7,6 @@ import (
 
 	networkingv1beta1 "istio.io/api/networking/v1beta1"
 	"istio.io/client-go/pkg/apis/networking/v1beta1"
-	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -235,12 +234,14 @@ func TestUnstructuredObjectReflector(t *testing.T) {
 }
 
 func TestCreateNewFakeClients(t *testing.T) {
-	s := scheme.Scheme
-	istioscheme.AddToScheme(s)
-	kc, dc, _, err := NewFakeClients(s)
+	s := runtime.NewScheme()
+	clients, err := NewFakeClients(s)
 	if err != nil {
 		t.Fatalf("Failed to create clients: %v", err)
 	}
+
+	kc := clients.Kubernetes
+	dc := clients.Dynamic
 
 	ns := "test-ns"
 	name := "test-cm"
@@ -273,7 +274,7 @@ func TestCreateNewFakeClients(t *testing.T) {
 	}
 
 	converted := &corev1.ConfigMap{}
-	if err := scheme.Scheme.Convert(u, converted, nil); err != nil {
+	if err := s.Convert(u, converted, nil); err != nil {
 		t.Fatalf("Failed to convert unstructured ConfigMap: %v", err)
 	}
 
@@ -285,12 +286,14 @@ func TestCreateNewFakeClients(t *testing.T) {
 func TestFakeClientsForResource(t *testing.T) {
 	ns := "testing-namespace"
 	ctx := context.TODO()
-	s := scheme.Scheme
-	istioscheme.AddToScheme(s)
-	_, dc, ic, err := NewFakeClients(s)
+	s := runtime.NewScheme()
+	clients, err := NewFakeClients(s)
 	if err != nil {
 		t.Fatalf("Failed to create clients: %v", err)
 	}
+
+	dc := clients.Dynamic
+	ic := clients.Istio
 
 	ds := &v1beta1.DestinationRule{
 		ObjectMeta: metav1.ObjectMeta{
@@ -310,6 +313,7 @@ func TestFakeClientsForResource(t *testing.T) {
 		dc,
 		time.Second,
 		informers.WithNamespaces([]string{metav1.NamespaceAll}),
+		informers.WithScheme(s),
 	)
 
 	informer, err := istio.NewSharedInformerFactory(f).ForResource(v1beta1.SchemeGroupVersion.WithResource("destinationrules"))
