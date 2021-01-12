@@ -7,9 +7,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 
 	informertesting "github.com/maistra/xns-informer/pkg/testing"
@@ -39,10 +39,14 @@ func TestEventHandlers(t *testing.T) {
 	updateFuncCalled := false
 	deleteFuncCalled := false
 
-	client, dynamic, _, err := informertesting.NewFakeClients(scheme.Scheme)
+	s := runtime.NewScheme()
+	clients, err := informertesting.NewFakeClients(s)
 	if err != nil {
 		t.Fatalf("Client setup failed: %v", err)
 	}
+
+	client := clients.Kubernetes
+	dynamic := clients.Dynamic
 
 	informer := NewMultiNamespaceInformer(true, 0, func(namespace string) cache.SharedIndexInformer {
 		i := dynamicinformer.NewFilteredDynamicInformer(
