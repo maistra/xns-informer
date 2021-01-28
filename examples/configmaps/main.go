@@ -1,21 +1,30 @@
 package main
 
 import (
-	"log"
+	"flag"
 	"os"
 	"time"
 
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 
 	kubeinformers "github.com/maistra/xns-informer/pkg/generated/kube"
-	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 )
 
+// This is an example of using cross-namespace informers for Kubernetes types.
+//
+// Set up your Kubernetes client config, and run this passing a set of
+// namespaces, e.g.: go run main.go default ns-two ns-three
+
 func main() {
+	klog.InitFlags(nil)
+	flag.Set("v", "4")
+	flag.Parse()
+
 	configOverrides := &clientcmd.ConfigOverrides{}
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
@@ -25,86 +34,93 @@ func main() {
 
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
-		log.Fatal(err)
+		klog.Fatal(err)
 	}
 
-	client, err := dynamic.NewForConfig(config)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	client := kubernetes.NewForConfigOrDie(config)
 	resync := 1 * time.Minute
 	stopCh := make(chan struct{})
 	namespaces := os.Args[1:]
-	log.Printf("Creating informer for namespaces: %v", namespaces)
 
-	factory := xnsinformers.NewSharedInformerFactoryWithOptions(
+	klog.Infof("Creating informer factory for namespaces: %v", namespaces)
+
+	// Create the factory for Kubernetes informers.
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(
 		client,
 		resync,
-		xnsinformers.WithNamespaces(namespaces),
+		kubeinformers.WithNamespaces(namespaces...),
 	)
 
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(factory)
+	// Get a cross-namespace informer for ConfigMaps.
 	cmInformer := kubeInformerFactory.Core().V1().ConfigMaps()
 
+	// Add handlers that just log the events.
 	cmInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			m, err := apimeta.Accessor(obj)
 			if err != nil {
-				log.Fatal(err)
+				klog.Fatal(err)
 			}
-			log.Printf("*** Add Event for ConfigMap: %s/%s", m.GetNamespace(), m.GetName())
+			klog.Infof("*** Add Event for ConfigMap: %s/%s", m.GetNamespace(), m.GetName())
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			m, err := apimeta.Accessor(newObj)
 			if err != nil {
-				log.Fatal(err)
+				klog.Fatal(err)
 			}
-			log.Printf("*** Update Event for ConfigMap: %s/%s", m.GetNamespace(), m.GetName())
+			klog.Infof("*** Update Event for ConfigMap: %s/%s", m.GetNamespace(), m.GetName())
 		},
 		DeleteFunc: func(obj interface{}) {
 			m, err := apimeta.Accessor(obj)
 			if err != nil {
-				log.Fatal(err)
+				klog.Fatal(err)
 			}
-			log.Printf("*** Delete Event for ConfigMap: %s/%s", m.GetNamespace(), m.GetName())
+			klog.Infof("*** Delete Event for ConfigMap: %s/%s", m.GetNamespace(), m.GetName())
 		},
 	})
 
-	factory.Start(stopCh)
-	factory.WaitForCacheSync(stopCh)
-	log.Print("Informers started and synced!")
+	// After requesting new informers Start() and WaitForCacheSync() must be
+	// called on the factory.  They can safely be called multiple times.
+	kubeInformerFactory.Start(stopCh)
+	kubeInformerFactory.WaitForCacheSync(stopCh)
+	klog.Info("Informers started and synced!")
 
-	log.Print("Listing all ConfigMaps in default namespace...")
-	configMaps, err := cmInformer.Lister().ConfigMaps("default").List(labels.Everything())
+	firstNS := namespaces[0]
+
+	klog.Infof("Listing all ConfigMaps in %q namespace...", firstNS)
+	// Get a lister for the first tracked namespace, and list all ConfigMaps there.
+	configMaps, err := cmInformer.Lister().ConfigMaps(firstNS).List(labels.Everything())
 	if err != nil {
-		log.Fatal(err)
+		klog.Fatal(err)
 	}
 
 	for i := range configMaps {
 		namespace := configMaps[i].GetNamespace()
 		name := configMaps[i].GetName()
-		log.Printf("  - %s/%s", namespace, name)
+		klog.Infof("  - %s/%s", namespace, name)
 	}
 
-	log.Print("Listing and fetching all ConfigMaps...")
+	klog.Info("Listing and fetching ConfigMaps in all tracked namespaces...")
+	// Get a lister across all tracked namespaces, and get all ConfigMaps.
 	configMaps, err = cmInformer.Lister().List(labels.Everything())
 	if err != nil {
-		log.Fatal(err)
+		klog.Fatal(err)
 	}
 
 	for i := range configMaps {
 		namespace := configMaps[i].GetNamespace()
 		name := configMaps[i].GetName()
-		log.Printf("  - %s/%s", namespace, name)
+		klog.Infof("  - %s/%s", namespace, name)
 
 		cm, err := cmInformer.Lister().ConfigMaps(namespace).Get(name)
 		if err != nil {
-			log.Fatal(err)
+			klog.Fatal(err)
 		}
 
-		log.Printf("    - DATA: %v", cm.Data)
+		klog.Infof("    - DATA: %v", cm.Data)
 	}
+
+	klog.Info("Waiting for new events. Press Ctrl-c to exit.")
 
 	select {}
 }
