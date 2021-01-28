@@ -9,10 +9,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/apimachinery/pkg/watch"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
-
-	informertesting "github.com/maistra/xns-informer/pkg/testing"
 )
 
 const (
@@ -22,6 +21,9 @@ const (
 var configMapGVR = corev1.SchemeGroupVersion.WithResource("configmaps")
 
 func TestEventHandlers(t *testing.T) {
+	var err error
+
+	ctx := context.TODO()
 	stopCh := make(chan struct{})
 
 	ns := "test-ns"
@@ -39,29 +41,24 @@ func TestEventHandlers(t *testing.T) {
 	updateFuncCalled := false
 	deleteFuncCalled := false
 
-	s := runtime.NewScheme()
-	clients, err := informertesting.NewFakeClients(s)
-	if err != nil {
-		t.Fatalf("Client setup failed: %v", err)
-	}
+	client := kubefake.NewSimpleClientset()
+	namespaces := NewNamespaceSet(ns)
 
-	client := clients.Kubernetes
-	dynamic := clients.Dynamic
-
-	informer := NewMultiNamespaceInformer(true, 0, func(namespace string) cache.SharedIndexInformer {
-		i := dynamicinformer.NewFilteredDynamicInformer(
-			dynamic,
-			configMapGVR,
-			namespace,
+	informer := NewMultiNamespaceInformer(namespaces, 0, func(namespace string) cache.SharedIndexInformer {
+		return cache.NewSharedIndexInformer(
+			&cache.ListWatch{
+				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+					return client.CoreV1().ConfigMaps(namespace).List(ctx, options)
+				},
+				WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+					return client.CoreV1().ConfigMaps(namespace).Watch(ctx, options)
+				},
+			},
+			&corev1.ConfigMap{},
 			resyncPeriod,
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-			nil,
 		)
-
-		return i.Informer()
 	})
-
-	informer.AddNamespace(ns)
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(_ interface{}) {
@@ -75,10 +72,8 @@ func TestEventHandlers(t *testing.T) {
 		},
 	})
 
-	informer.NonBlockingRun(stopCh)
+	go informer.Run(stopCh)
 	cache.WaitForCacheSync(stopCh, informer.HasSynced)
-
-	ctx := context.TODO()
 
 	// Create the ConfigMap.
 	_, err = client.CoreV1().ConfigMaps(ns).Create(ctx, cm, metav1.CreateOptions{})
@@ -99,7 +94,7 @@ func TestEventHandlers(t *testing.T) {
 	}
 
 	// Wait for all handler functions to be called.
-	err = wait.PollImmediate(10*time.Second, 1*time.Minute, func() (bool, error) {
+	err = wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
 		return addFuncCalled && updateFuncCalled && deleteFuncCalled, nil
 	})
 
