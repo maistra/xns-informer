@@ -70,23 +70,34 @@ service_apis_group_versions=(
 )
 
 "${PROJ_ROOT}/out/xns-informer-gen" \
-	-v 2 \
-	-o "${PROJ_ROOT}/pkg/generated/kube" \
-	-p 'github.com/maistra/xns-informer/pkg/generated/kube' \
-	-i "$(join_by , ${k8s_group_versions[@]})"
+  --output-base "${PROJ_ROOT}/out" \
+  --output-package "github.com/maistra/xns-informer/pkg/generated/kube" \
+  --single-directory \
+  --input-dirs "$(join_by , ${k8s_group_versions[@]})" \
+  --versioned-clientset-package "k8s.io/client-go/kubernetes" \
+  --listers-package "k8s.io/client-go/listers" \
+  --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
 
 "${PROJ_ROOT}/out/xns-informer-gen" \
+  --output-base "${PROJ_ROOT}/out" \
+  --output-package "github.com/maistra/xns-informer/pkg/generated/istio" \
+  --single-directory \
+  --input-dirs "$(join_by , ${istio_group_versions[@]})" \
+  --versioned-clientset-package "istio.io/client-go/pkg/clientset/versioned" \
   --listers-package "istio.io/client-go/pkg/listers" \
-  --informers-package "istio.io/client-go/pkg/informers/externalversions" \
-	-v 2 \
-	-o "${PROJ_ROOT}/pkg/generated/istio" \
-	-p 'github.com/maistra/xns-informer/pkg/generated/istio' \
-	-i "$(join_by , ${istio_group_versions[@]})"
+  --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
 
 "${PROJ_ROOT}/out/xns-informer-gen" \
+  --output-base "${PROJ_ROOT}/out" \
+  --output-package "github.com/maistra/xns-informer/pkg/generated/serviceapis" \
+  --single-directory \
+  --input-dirs "$(join_by , ${service_apis_group_versions[@]})" \
+  --versioned-clientset-package "sigs.k8s.io/service-apis/pkg/client/clientset/versioned" \
   --listers-package "sigs.k8s.io/service-apis/pkg/client/listers" \
-  --informers-package "sigs.k8s.io/service-apis/pkg/client/informers/externalversions" \
-	-v 2 \
-	-o "${PROJ_ROOT}/pkg/generated/serviceapis" \
-	-p 'github.com/maistra/xns-informer/pkg/generated/serviceapis' \
-	-i "$(join_by , ${service_apis_group_versions[@]})"
+  --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
+
+rsync -a --remove-source-files --delete \
+	  "${PROJ_ROOT}/out/github.com/maistra/xns-informer/pkg/generated/" \
+	  "${PROJ_ROOT}/pkg/generated"
+
+rm -rd "${PROJ_ROOT}/out/github.com"
