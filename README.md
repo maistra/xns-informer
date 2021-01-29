@@ -20,8 +20,8 @@ cluster, but may still want to watch more than one namespace.
 This library provides a method to create informers for any resource type that
 work across a dynamic set of namespaces, as well as a code generation tool that
 can generate packages containing informer factories for sets of types that are
-API compatible with existing versions.  A cross-namespace version of the
-informer factory for Kubernetes API types is included.
+(mostly) API compatible with existing versions.  A cross-namespace version of
+the informer factory for Kubernetes and Istio API types is included.
 
 
 ## Example
