@@ -18,10 +18,10 @@ client may not haves permission to list and read objects across the entire
 cluster, but may still want to watch more than one namespace.
 
 This library provides a method to create informers for any resource type that
-work across a dynamic set of namespaces, as well as a code generation tool
-that can generate packages containing informer factories for sets of types
-that are (mostly) API compatible with existing versions.  A cross-namespace
-version of the informer factory for Kubernetes API types is included.
+work across a dynamic set of namespaces, as well as a code generation tool that
+can generate packages containing informer factories for sets of types that are
+API compatible with existing versions.  A cross-namespace version of the
+informer factory for Kubernetes API types is included.
 
 
 ## Example
@@ -29,25 +29,22 @@ version of the informer factory for Kubernetes API types is included.
 An example of creating an informer for ConfigMap resources:
 
 ```golang
+import kubeinformers "github.com/maistra/xns-informer/pkg/generated/kube"
+
 // Create a new shared informer factory.
-// Assume client is a dynamic.Interface Kubernetes client.
-factory := xnsinformers.NewSharedInformerFactoryWithOptions(
+// Assume client is a Kubernetes client interface.
+factory := kubeinformers.NewSharedInformerFactoryWithOptions(
 	client,
 	1*time.Minute,
-	xnsinformers.WithNamespaces([]string{"default", "application"}),
+	kubeinformers.WithNamespaces("default", "kube-system"),
 )
 
 // Create an informer for ConfigMap resources.
-resource := corev1.SchemeGroupVersion.WithResource("configmaps")
-informer := factory.NamespacedResource(resource)
-informer := factory.ForResource(resource, xnsinformers.ResourceOptions{
-    ClusterScoped: false,
-})
+informer := factory.Core().V1().ConfigMaps()
 
 // Add an event handler to the new informer.
 informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 	AddFunc: func(obj interface{}) {
-		// obj is an *unstructured.Unstructured here.
 		log.Print("ConfigMap add event!")
 	},
 })
@@ -58,20 +55,14 @@ stopCh := make(chan struct{})
 factory.Start(stopCh)
 factory.WaitForCacheSync(stopCh)
 
-// Now you can list all ConfigMap objects across the namespaces.
-// The list will contain a slice of unstructured.Unstructured objects.
+// You can list all ConfigMap objects across only the tracked namespaces.
 list, err := informer.Lister().List(labels.Everything())
 
-// Want to do the above, but work with the concrete types?
-kubeInformerFactory := kubeinformers.NewSharedInformerFactory(factory)
-cmInformer := kubeInformerFactory.Core().V1().ConfigMaps()
+// You can change the set of namespaces at anytime.
+factory.SetNamespaces("my-application", "another-application")
 
-// These are safe to call multiple times.
-factory.Start(stopCh)
-factory.WaitForCacheSync(stopCh)
-
-// The same list operation as above, but returns ConfigMap objects.
-configMaps, err = cmInformer.Lister().List(labels.Everything())
+// This will now only list ConfigMaps in the new namespaces.
+list, err = informer.Lister().List(labels.Everything())
 ```
 
 See the [examples][1] directory for more detailed examples.

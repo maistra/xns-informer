@@ -1,3 +1,19 @@
+/*
+Copyright 2016 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package generators
 
 import (
@@ -108,13 +124,13 @@ func (g *genericGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 	sort.Sort(groupSort(groups))
 
 	m := map[string]interface{}{
-		"cacheGenericLister":         c.Universe.Type(types.Name{Package: "k8s.io/client-go/tools/cache", Name: "GenericLister"}),
-		"cacheNewGenericLister":      c.Universe.Function(types.Name{Package: "k8s.io/client-go/tools/cache", Name: "NewGenericLister"}),
-		"cacheSharedIndexInformer":   c.Universe.Type(types.Name{Package: "k8s.io/client-go/tools/cache", Name: "SharedIndexInformer"}),
+		"cacheGenericLister":         c.Universe.Type(cacheGenericLister),
+		"cacheNewGenericLister":      c.Universe.Function(cacheNewGenericLister),
+		"cacheSharedIndexInformer":   c.Universe.Type(cacheSharedIndexInformer),
 		"groups":                     groups,
 		"schemeGVs":                  schemeGVs,
-		"schemaGroupResource":        c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/runtime/schema", Name: "GroupResource"}),
-		"schemaGroupVersionResource": c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/runtime/schema", Name: "GroupVersionResource"}),
+		"schemaGroupResource":        c.Universe.Type(schemaGroupResource),
+		"schemaGroupVersionResource": c.Universe.Type(schemaGroupVersionResource),
 	}
 
 	sw.Do(genericInformer, m)
@@ -130,14 +146,17 @@ type GenericInformer interface {
 	Informer() {{.cacheSharedIndexInformer|raw}}
 	Lister() {{.cacheGenericLister|raw}}
 }
+
 type genericInformer struct {
 	informer {{.cacheSharedIndexInformer|raw}}
 	resource {{.schemaGroupResource|raw}}
 }
+
 // Informer returns the SharedIndexInformer.
 func (f *genericInformer) Informer() {{.cacheSharedIndexInformer|raw}} {
 	return f.informer
 }
+
 // Lister returns the GenericLister.
 func (f *genericInformer) Lister() {{.cacheGenericLister|raw}} {
 	return {{.cacheNewGenericLister|raw}}(f.Informer().GetIndexer(), f.resource)
@@ -146,6 +165,7 @@ func (f *genericInformer) Lister() {{.cacheGenericLister|raw}} {
 
 var forResource = `
 // ForResource gives generic access to a shared informer of the matching type
+// TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource {{.schemaGroupVersionResource|raw}}) (GenericInformer, error) {
 	switch resource {
 		{{range $group := .groups -}}{{$GroupGoName := .GroupGoName -}}
@@ -158,6 +178,7 @@ func (f *sharedInformerFactory) ForResource(resource {{.schemaGroupVersionResour
 			{{end}}
 		{{end -}}
 	}
+
 	return nil, fmt.Errorf("no informer found for %v", resource)
 }
 `

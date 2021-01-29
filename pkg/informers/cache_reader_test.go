@@ -1,4 +1,4 @@
-package informers
+package informers_test
 
 import (
 	"sort"
@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
 
+	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	internaltesting "github.com/maistra/xns-informer/pkg/internal/testing"
 )
 
@@ -43,7 +44,7 @@ func TestCacheReaderList(t *testing.T) {
 	for _, tt := range cacheReaderTests {
 		t.Run(tt.name, func(t *testing.T) {
 			idx := internaltesting.NewMultiIndexer(tt.objects)
-			reader := NewCacheReader(idx)
+			reader := xnsinformers.NewCacheReader(idx)
 
 			gotObjects := reader.List()
 			expectedObjects := tt.objects.Objects()
@@ -68,7 +69,7 @@ func TestCacheReaderListKeys(t *testing.T) {
 	for _, tt := range cacheReaderTests {
 		t.Run(tt.name, func(t *testing.T) {
 			idx := internaltesting.NewMultiIndexer(tt.objects)
-			reader := NewCacheReader(idx)
+			reader := xnsinformers.NewCacheReader(idx)
 
 			gotKeys := reader.ListKeys()
 			expectedKeys := tt.objects.AllKeys()
@@ -86,7 +87,7 @@ func TestCacheReaderGetIndexers(t *testing.T) {
 	for _, tt := range cacheReaderTests {
 		t.Run(tt.name, func(t *testing.T) {
 			idx := internaltesting.NewMultiIndexer(tt.objects)
-			reader := NewCacheReader(idx)
+			reader := xnsinformers.NewCacheReader(idx)
 
 			if len(tt.objects) == 0 {
 				t.SkipNow()
@@ -106,7 +107,7 @@ func TestCacheReaderIndex(t *testing.T) {
 	for _, tt := range cacheReaderTests {
 		t.Run(tt.name, func(t *testing.T) {
 			idx := internaltesting.NewMultiIndexer(tt.objects)
-			reader := NewCacheReader(idx)
+			reader := xnsinformers.NewCacheReader(idx)
 
 			// Use the namespace indexer to fetch all objects in a particular
 			// namespace and compare that to the input.
@@ -138,7 +139,7 @@ func TestCacheReaderIndexKeys(t *testing.T) {
 	for _, tt := range cacheReaderTests {
 		t.Run(tt.name, func(t *testing.T) {
 			idx := internaltesting.NewMultiIndexer(tt.objects)
-			reader := NewCacheReader(idx)
+			reader := xnsinformers.NewCacheReader(idx)
 
 			// Test IndexKeys()
 			namespace := "namespace-two"
@@ -161,7 +162,7 @@ func TestCacheReaderListIndexFuncValues(t *testing.T) {
 	for _, tt := range cacheReaderTests {
 		t.Run(tt.name, func(t *testing.T) {
 			idx := internaltesting.NewMultiIndexer(tt.objects)
-			reader := NewCacheReader(idx)
+			reader := xnsinformers.NewCacheReader(idx)
 
 			gotValues := reader.ListIndexFuncValues(cache.NamespaceIndex)
 			expectedValues := tt.objects.Namespaces()
@@ -179,7 +180,7 @@ func TestCacheReaderByIndex(t *testing.T) {
 	for _, tt := range cacheReaderTests {
 		t.Run(tt.name, func(t *testing.T) {
 			idx := internaltesting.NewMultiIndexer(tt.objects)
-			reader := NewCacheReader(idx)
+			reader := xnsinformers.NewCacheReader(idx)
 
 			for _, namespace := range tt.objects.Namespaces() {
 				expectedObjects := tt.objects[namespace]
@@ -223,7 +224,7 @@ func TestCacheReaderGet(t *testing.T) {
 	for _, tt := range cacheReaderTests {
 		t.Run(tt.name, func(t *testing.T) {
 			idx := internaltesting.NewMultiIndexer(tt.objects)
-			reader := NewCacheReader(idx)
+			reader := xnsinformers.NewCacheReader(idx)
 
 			for _, expectedObject := range tt.objects.Objects() {
 				gotObject, exists, err := reader.Get(expectedObject)
@@ -265,7 +266,7 @@ func TestCacheReaderGetByKey(t *testing.T) {
 	for _, tt := range cacheReaderTests {
 		t.Run(tt.name, func(t *testing.T) {
 			idx := internaltesting.NewMultiIndexer(tt.objects)
-			reader := NewCacheReader(idx)
+			reader := xnsinformers.NewCacheReader(idx)
 
 			for _, expectedObject := range tt.objects.Objects() {
 				key, _ := cache.MetaNamespaceKeyFunc(expectedObject)
