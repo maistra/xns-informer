@@ -4,9 +4,14 @@ import (
 	"sync"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
 )
+
+// TweakListOptionsFunc defines the signature of a helper function that allows
+// filtering in informers created by shared informer factories.
+type TweakListOptionsFunc func(*metav1.ListOptions)
 
 // MultiNamespaceInformer extends the cache.SharedIndexInformer interface with
 // methods relevant to cross-namespace informers.

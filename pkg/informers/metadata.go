@@ -6,37 +6,33 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/dynamic/dynamiclister"
 	"k8s.io/client-go/informers"
+	"k8s.io/client-go/metadata"
+	"k8s.io/client-go/metadata/metadatalister"
 	"k8s.io/client-go/tools/cache"
 )
 
-// DynamicSharedInformerFactory provides access to shared informers and listers for dynamic client.
-//
-// Note that if you restrict the factory or an individual informer to a set of
-// namespaces, it will not work for cluster-scoped resources.
-type DynamicSharedInformerFactory interface {
+// MetadataSharedInformerFactory provides access to shared informers and listers for metadata client.
+type MetadataSharedInformerFactory interface {
 	Start(stopCh <-chan struct{})
 	SetNamespaces(namespaces ...string)
 	ForResource(gvr schema.GroupVersionResource) informers.GenericInformer
 	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
 }
 
-// NewDynamicSharedInformerFactory constructs a new instance of dynamicSharedInformerFactory for all namespaces.
-func NewDynamicSharedInformerFactory(client dynamic.Interface, defaultResync time.Duration) DynamicSharedInformerFactory {
+// NewMetadataSharedInformerFactory constructs a new instance of metadataSharedInformerFactory for all namespaces.
+func NewMetadataSharedInformerFactory(client metadata.Interface, defaultResync time.Duration) MetadataSharedInformerFactory {
 	namespaces := NewNamespaceSet(metav1.NamespaceAll)
-	return NewFilteredDynamicSharedInformerFactory(client, defaultResync, namespaces, nil)
+	return NewFilteredMetadataSharedInformerFactory(client, defaultResync, namespaces, nil)
 }
 
-// NewFilteredDynamicSharedInformerFactory constructs a new instance of dynamicSharedInformerFactory.
+// NewFilteredMetadataSharedInformerFactory constructs a new instance of metadataSharedInformerFactory.
 // Listers obtained via this factory will be subject to the same filters as specified here.
-func NewFilteredDynamicSharedInformerFactory(client dynamic.Interface, defaultResync time.Duration, namespaces NamespaceSet, tweakListOptions TweakListOptionsFunc) DynamicSharedInformerFactory {
-	return &dynamicSharedInformerFactory{
+func NewFilteredMetadataSharedInformerFactory(client metadata.Interface, defaultResync time.Duration, namespaces NamespaceSet, tweakListOptions TweakListOptionsFunc) MetadataSharedInformerFactory {
+	return &metadataSharedInformerFactory{
 		client:           client,
 		defaultResync:    defaultResync,
 		namespaces:       namespaces,
@@ -46,8 +42,8 @@ func NewFilteredDynamicSharedInformerFactory(client dynamic.Interface, defaultRe
 	}
 }
 
-type dynamicSharedInformerFactory struct {
-	client        dynamic.Interface
+type metadataSharedInformerFactory struct {
+	client        metadata.Interface
 	defaultResync time.Duration
 	namespaces    NamespaceSet
 
@@ -59,9 +55,9 @@ type dynamicSharedInformerFactory struct {
 	tweakListOptions TweakListOptionsFunc
 }
 
-var _ DynamicSharedInformerFactory = &dynamicSharedInformerFactory{}
+var _ MetadataSharedInformerFactory = &metadataSharedInformerFactory{}
 
-func (f *dynamicSharedInformerFactory) ForResource(gvr schema.GroupVersionResource) informers.GenericInformer {
+func (f *metadataSharedInformerFactory) ForResource(gvr schema.GroupVersionResource) informers.GenericInformer {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
@@ -71,22 +67,14 @@ func (f *dynamicSharedInformerFactory) ForResource(gvr schema.GroupVersionResour
 		return informer
 	}
 
-	informer = NewFilteredDynamicInformer(
-		f.client,
-		gvr,
-		f.namespaces,
-		f.defaultResync,
-		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-		f.tweakListOptions,
-	)
-
+	informer = NewFilteredMetadataInformer(f.client, gvr, f.namespaces, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 	f.informers[key] = informer
 
 	return informer
 }
 
 // SetNamespaces updates the set of namespaces for all current and future informers.
-func (f *dynamicSharedInformerFactory) SetNamespaces(namespaces ...string) {
+func (f *metadataSharedInformerFactory) SetNamespaces(namespaces ...string) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
@@ -94,7 +82,7 @@ func (f *dynamicSharedInformerFactory) SetNamespaces(namespaces ...string) {
 }
 
 // Start initializes all requested informers.
-func (f *dynamicSharedInformerFactory) Start(stopCh <-chan struct{}) {
+func (f *metadataSharedInformerFactory) Start(stopCh <-chan struct{}) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
@@ -107,7 +95,7 @@ func (f *dynamicSharedInformerFactory) Start(stopCh <-chan struct{}) {
 }
 
 // WaitForCacheSync waits for all started informers' cache were synced.
-func (f *dynamicSharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool {
+func (f *metadataSharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool {
 	informers := func() map[schema.GroupVersionResource]cache.SharedIndexInformer {
 		f.lock.Lock()
 		defer f.lock.Unlock()
@@ -128,8 +116,8 @@ func (f *dynamicSharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) 
 	return res
 }
 
-// NewFilteredDynamicInformer constructs a new informer for a dynamic type.
-func NewFilteredDynamicInformer(client dynamic.Interface, gvr schema.GroupVersionResource, namespaces NamespaceSet, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions TweakListOptionsFunc) informers.GenericInformer {
+// NewFilteredMetadataInformer constructs a new informer for a metadata type.
+func NewFilteredMetadataInformer(client metadata.Interface, gvr schema.GroupVersionResource, namespaces NamespaceSet, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions TweakListOptionsFunc) informers.GenericInformer {
 	newInformer := func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
 			&cache.ListWatch{
@@ -146,29 +134,29 @@ func NewFilteredDynamicInformer(client dynamic.Interface, gvr schema.GroupVersio
 					return client.Resource(gvr).Namespace(namespace).Watch(context.TODO(), options)
 				},
 			},
-			&unstructured.Unstructured{},
+			&metav1.PartialObjectMetadata{},
 			resyncPeriod,
 			indexers,
 		)
 	}
 
-	return &dynamicInformer{
+	return &metadataInformer{
 		gvr:      gvr,
 		informer: NewMultiNamespaceInformer(namespaces, resyncPeriod, newInformer),
 	}
 }
 
-type dynamicInformer struct {
+type metadataInformer struct {
 	informer cache.SharedIndexInformer
 	gvr      schema.GroupVersionResource
 }
 
-var _ informers.GenericInformer = &dynamicInformer{}
+var _ informers.GenericInformer = &metadataInformer{}
 
-func (d *dynamicInformer) Informer() cache.SharedIndexInformer {
+func (d *metadataInformer) Informer() cache.SharedIndexInformer {
 	return d.informer
 }
 
-func (d *dynamicInformer) Lister() cache.GenericLister {
-	return dynamiclister.NewRuntimeObjectShim(dynamiclister.New(d.informer.GetIndexer(), d.gvr))
+func (d *metadataInformer) Lister() cache.GenericLister {
+	return metadatalister.NewRuntimeObjectShim(metadatalister.New(d.informer.GetIndexer(), d.gvr))
 }
