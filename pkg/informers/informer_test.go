@@ -12,6 +12,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
+
+	internaltesting "github.com/maistra/xns-informer/pkg/internal/testing"
 )
 
 const (
@@ -26,25 +28,19 @@ func TestEventHandlers(t *testing.T) {
 	ctx := context.TODO()
 	stopCh := make(chan struct{})
 
-	ns := "test-ns"
-	name := "test-configmap"
+	namespaces := []string{"ns1", "ns2"}
 
-	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
-		},
-		Data: map[string]string{"test": "data"},
-	}
+	cm1 := internaltesting.NewConfigMap(namespaces[0], "cm1", nil)
+	cm2 := internaltesting.NewConfigMap(namespaces[1], "cm2", nil)
 
 	addFuncCalled := false
 	updateFuncCalled := false
 	deleteFuncCalled := false
 
 	client := kubefake.NewSimpleClientset()
-	namespaces := NewNamespaceSet(ns)
+	namespaceSet := NewNamespaceSet(namespaces...)
 
-	informer := NewMultiNamespaceInformer(namespaces, 0, func(namespace string) cache.SharedIndexInformer {
+	informer := NewMultiNamespaceInformer(namespaceSet, 0, func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
 			&cache.ListWatch{
 				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
@@ -75,30 +71,49 @@ func TestEventHandlers(t *testing.T) {
 	go informer.Run(stopCh)
 	cache.WaitForCacheSync(stopCh, informer.HasSynced)
 
-	// Create the ConfigMap.
-	_, err = client.CoreV1().ConfigMaps(ns).Create(ctx, cm, metav1.CreateOptions{})
+	// Create the ConfigMap in the first namespace.
+	_, err = client.CoreV1().ConfigMaps(namespaces[0]).Create(ctx, cm1, metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("Failed to create ConfigMap: %v", err)
 	}
 
-	// Update the ConfigMap.
-	_, err = client.CoreV1().ConfigMaps(ns).Update(ctx, cm, metav1.UpdateOptions{})
+	// Create the ConfigMap in the second namespace.
+	_, err = client.CoreV1().ConfigMaps(namespaces[1]).Create(ctx, cm2, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to create ConfigMap: %v", err)
+	}
+
+	// Update the ConfigMap in the first namespace.
+	_, err = client.CoreV1().ConfigMaps(namespaces[0]).Update(ctx, cm1, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("Failed to update ConfigMap: %v", err)
 	}
 
-	// Delete the ConfigMap.
-	err = client.CoreV1().ConfigMaps(ns).Delete(ctx, name, metav1.DeleteOptions{})
+	// Delete the ConfigMap in the second namespace.
+	err = client.CoreV1().ConfigMaps(namespaces[1]).Delete(ctx, "cm2", metav1.DeleteOptions{})
 	if err != nil {
 		t.Fatalf("Failed to delete ConfigMap: %v", err)
 	}
 
 	// Wait for all handler functions to be called.
-	err = wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
+	err = wait.PollImmediate(100*time.Millisecond, 1*time.Minute, func() (bool, error) {
 		return addFuncCalled && updateFuncCalled && deleteFuncCalled, nil
 	})
 
 	if err != nil {
-		t.Fatalf("Handler not called: %v", err)
+		t.Fatalf("Handlers not called: %v", err)
+	}
+
+	// Remove first namespace from the set.
+	deleteFuncCalled = false
+	informer.RemoveNamespace(namespaces[0])
+
+	// Wait for delete handler function to be called again.
+	err = wait.PollImmediate(100*time.Millisecond, 1*time.Minute, func() (bool, error) {
+		return deleteFuncCalled, nil
+	})
+
+	if err != nil {
+		t.Fatalf("Delete handler not called after namespace removal: %v", err)
 	}
 }
