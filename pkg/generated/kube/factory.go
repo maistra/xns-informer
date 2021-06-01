@@ -40,7 +40,6 @@ import (
 	policy "github.com/maistra/xns-informer/pkg/generated/kube/policy"
 	rbac "github.com/maistra/xns-informer/pkg/generated/kube/rbac"
 	scheduling "github.com/maistra/xns-informer/pkg/generated/kube/scheduling"
-	settings "github.com/maistra/xns-informer/pkg/generated/kube/settings"
 	storage "github.com/maistra/xns-informer/pkg/generated/kube/storage"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -207,7 +206,6 @@ type SharedInformerFactory interface {
 	Policy() policy.Interface
 	Rbac() rbac.Interface
 	Scheduling() scheduling.Interface
-	Settings() settings.Interface
 	Storage() storage.Interface
 }
 
@@ -273,10 +271,6 @@ func (f *sharedInformerFactory) Rbac() rbac.Interface {
 
 func (f *sharedInformerFactory) Scheduling() scheduling.Interface {
 	return scheduling.New(f, f.namespaces, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Settings() settings.Interface {
-	return settings.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Storage() storage.Interface {
