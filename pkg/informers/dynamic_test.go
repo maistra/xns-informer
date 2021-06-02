@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
+	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -73,11 +75,15 @@ func TestFilteredDynamicSharedInformerFactory(t *testing.T) {
 	for _, ts := range scenarios {
 		t.Run(ts.name, func(t *testing.T) {
 			// test data
-			timeout := time.Duration(3 * time.Second)
+			timeout := 3 * time.Second
 			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 			scheme := runtime.NewScheme()
-			informerReciveObjectCh := make(chan *unstructured.Unstructured, 1)
+			err := appsv1.AddToScheme(scheme)
+			if err != nil {
+				t.Fatalf("couldn't add appsv1 to scheme: %v", err)
+			}
+			informerReceiveObjectCh := make(chan *unstructured.Unstructured, 1)
 			objs := []runtime.Object{}
 			if ts.existingObj != nil {
 				objs = append(objs, ts.existingObj)
@@ -87,7 +93,7 @@ func TestFilteredDynamicSharedInformerFactory(t *testing.T) {
 
 			// act
 			informerListerForGvr := target.ForResource(ts.gvr)
-			informerListerForGvr.Informer().AddEventHandler(ts.handler(informerReciveObjectCh))
+			informerListerForGvr.Informer().AddEventHandler(ts.handler(informerReceiveObjectCh))
 			target.Start(ctx.Done())
 			if synced := target.WaitForCacheSync(ctx.Done()); !synced[ts.gvr] {
 				t.Errorf("informer for %s hasn't synced", ts.gvr)
@@ -95,7 +101,7 @@ func TestFilteredDynamicSharedInformerFactory(t *testing.T) {
 
 			testObject := ts.trigger(ts.gvr, ts.ns, fakeClient, ts.existingObj)
 			select {
-			case objFromInformer := <-informerReciveObjectCh:
+			case objFromInformer := <-informerReceiveObjectCh:
 				if !ts.informNS.Contains(ts.ns) {
 					t.Errorf("informer received an object for namespace %s when watching namespaces %s", ts.ns, ts.informNS.List())
 				}
@@ -192,11 +198,15 @@ func TestDynamicSharedInformerFactory(t *testing.T) {
 	for _, ts := range scenarios {
 		t.Run(ts.name, func(t *testing.T) {
 			// test data
-			timeout := time.Duration(3 * time.Second)
+			timeout := 3 * time.Second
 			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 			scheme := runtime.NewScheme()
-			informerReciveObjectCh := make(chan *unstructured.Unstructured, 1)
+			err := extensionsv1beta1.AddToScheme(scheme)
+			if err != nil {
+				t.Fatalf("couldn't add appsv1 to scheme: %v", err)
+			}
+			informerReceiveObjectCh := make(chan *unstructured.Unstructured, 1)
 			objs := []runtime.Object{}
 			if ts.existingObj != nil {
 				objs = append(objs, ts.existingObj)
@@ -206,7 +216,7 @@ func TestDynamicSharedInformerFactory(t *testing.T) {
 
 			// act
 			informerListerForGvr := target.ForResource(ts.gvr)
-			informerListerForGvr.Informer().AddEventHandler(ts.handler(informerReciveObjectCh))
+			informerListerForGvr.Informer().AddEventHandler(ts.handler(informerReceiveObjectCh))
 			target.Start(ctx.Done())
 			if synced := target.WaitForCacheSync(ctx.Done()); !synced[ts.gvr] {
 				t.Errorf("informer for %s hasn't synced", ts.gvr)
@@ -214,7 +224,7 @@ func TestDynamicSharedInformerFactory(t *testing.T) {
 
 			testObject := ts.trigger(ts.gvr, ts.ns, fakeClient, ts.existingObj)
 			select {
-			case objFromInformer := <-informerReciveObjectCh:
+			case objFromInformer := <-informerReceiveObjectCh:
 				if !equality.Semantic.DeepEqual(testObject, objFromInformer) {
 					t.Fatalf("%v", diff.ObjectDiff(testObject, objFromInformer))
 				}
