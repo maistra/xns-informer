@@ -20,7 +20,6 @@ require (
 	k8s.io/client-go v0.19.2
 	k8s.io/code-generator v0.19.2
 	k8s.io/gengo v0.0.0-20200728071708-7794989d0000
-	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.3.0
 	k8s.io/utils v0.0.0-20200821003339-5e75c0163111 // indirect
 	sigs.k8s.io/service-apis v0.1.0-rc2.0.20201112213625-c0375b7fa81f
