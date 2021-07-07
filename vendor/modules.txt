@@ -465,13 +465,13 @@ k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/util/homedir
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/workqueue
-# k8s.io/code-generator v0.19.2
+# k8s.io/code-generator v0.20.1
 ## explicit
 k8s.io/code-generator/cmd/client-gen/generators/util
 k8s.io/code-generator/cmd/client-gen/types
 k8s.io/code-generator/pkg/namer
 k8s.io/code-generator/pkg/util
-# k8s.io/gengo v0.0.0-20200728071708-7794989d0000
+# k8s.io/gengo v0.0.0-20201113003025-83324d819ded
 ## explicit
 k8s.io/gengo/args
 k8s.io/gengo/generator
