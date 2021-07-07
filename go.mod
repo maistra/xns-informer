@@ -10,8 +10,8 @@ require (
 	k8s.io/api v0.20.1
 	k8s.io/apimachinery v0.20.1
 	k8s.io/client-go v0.20.1
-	k8s.io/code-generator v0.19.2
-	k8s.io/gengo v0.0.0-20200728071708-7794989d0000
+	k8s.io/code-generator v0.20.1
+	k8s.io/gengo v0.0.0-20201113003025-83324d819ded
 	k8s.io/klog/v2 v2.4.0
 	sigs.k8s.io/service-apis v0.1.0-rc2.0.20201112213625-c0375b7fa81f
 )
