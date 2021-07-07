@@ -129,14 +129,14 @@ google.golang.org/protobuf/types/known/timestamppb
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.3.0
 gopkg.in/yaml.v2
-# istio.io/api v0.0.0-20210420211535-1c598ea4139c
+# istio.io/api v0.0.0-20210503211644-902e709f95c4
 istio.io/api/analysis/v1alpha1
 istio.io/api/meta/v1alpha1
 istio.io/api/networking/v1alpha3
 istio.io/api/networking/v1beta1
 istio.io/api/security/v1beta1
 istio.io/api/type/v1beta1
-# istio.io/client-go v1.9.4
+# istio.io/client-go v0.0.0-20210503213042-e6eb157f0d81
 ## explicit
 istio.io/client-go/pkg/apis/networking/v1alpha3
 istio.io/client-go/pkg/apis/networking/v1beta1
