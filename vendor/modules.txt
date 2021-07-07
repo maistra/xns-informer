@@ -129,14 +129,14 @@ google.golang.org/protobuf/types/known/timestamppb
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.3.0
 gopkg.in/yaml.v2
-# istio.io/api v0.0.0-20210503211644-902e709f95c4
+# istio.io/api v0.0.0-20210503211644-902e709f95c4 => istio.io/api v0.0.0-20210419172736-e076ff10ec38
 istio.io/api/analysis/v1alpha1
 istio.io/api/meta/v1alpha1
 istio.io/api/networking/v1alpha3
 istio.io/api/networking/v1beta1
 istio.io/api/security/v1beta1
 istio.io/api/type/v1beta1
-# istio.io/client-go v0.0.0-20210503213042-e6eb157f0d81
+# istio.io/client-go v1.9.5-0.20210503213042-e6eb157f0d81
 ## explicit
 istio.io/client-go/pkg/apis/networking/v1alpha3
 istio.io/client-go/pkg/apis/networking/v1beta1
@@ -498,3 +498,4 @@ sigs.k8s.io/service-apis/pkg/client/listers/apis/v1alpha1
 sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
+# istio.io/api => istio.io/api v0.0.0-20210419172736-e076ff10ec38
