@@ -37,6 +37,7 @@ k8s_group_versions=(
   k8s.io/api/core/v1
   k8s.io/api/discovery/v1alpha1
   k8s.io/api/discovery/v1beta1
+  k8s.io/api/discovery/v1
   k8s.io/api/events/v1
   k8s.io/api/events/v1beta1
   k8s.io/api/extensions/v1beta1
@@ -60,13 +61,16 @@ k8s_group_versions=(
 )
 
 istio_group_versions=(
+  istio.io/client-go/pkg/apis/extensions/v1alpha1
   istio.io/client-go/pkg/apis/networking/v1alpha3
   istio.io/client-go/pkg/apis/networking/v1beta1
   istio.io/client-go/pkg/apis/security/v1beta1
+  istio.io/client-go/pkg/apis/telemetry/v1alpha1
 )
 
-service_apis_group_versions=(
-  sigs.k8s.io/service-apis/apis/v1alpha1
+gateway_api_group_versions=(
+  sigs.k8s.io/gateway-api/apis/v1alpha2
+  // TODO: do we also need sigs.k8s.io/gateway-api/apis/v1alpha1?
 )
 
 "${PROJ_ROOT}/out/xns-informer-gen" \
@@ -89,11 +93,11 @@ service_apis_group_versions=(
 
 "${PROJ_ROOT}/out/xns-informer-gen" \
   --output-base "${PROJ_ROOT}/out" \
-  --output-package "github.com/maistra/xns-informer/pkg/generated/serviceapis" \
+  --output-package "github.com/maistra/xns-informer/pkg/generated/gatewayapi" \
   --single-directory \
-  --input-dirs "$(join_by , ${service_apis_group_versions[@]})" \
-  --versioned-clientset-package "sigs.k8s.io/service-apis/pkg/client/clientset/versioned" \
-  --listers-package "sigs.k8s.io/service-apis/pkg/client/listers" \
+  --input-dirs "$(join_by , ${gateway_api_group_versions[@]})" \
+  --versioned-clientset-package "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned" \
+  --listers-package "sigs.k8s.io/gateway-api/pkg/client/listers/gateway" \
   --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
 
 rsync -a --remove-source-files --delete \

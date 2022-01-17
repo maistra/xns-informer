@@ -23,9 +23,11 @@ import (
 	sync "sync"
 	time "time"
 
+	extensions "github.com/maistra/xns-informer/pkg/generated/istio/extensions"
 	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/istio/internalinterfaces"
 	networking "github.com/maistra/xns-informer/pkg/generated/istio/networking"
 	security "github.com/maistra/xns-informer/pkg/generated/istio/security"
+	telemetry "github.com/maistra/xns-informer/pkg/generated/istio/telemetry"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	versioned "istio.io/client-go/pkg/clientset/versioned"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -175,8 +177,14 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	Extensions() extensions.Interface
 	Networking() networking.Interface
 	Security() security.Interface
+	Telemetry() telemetry.Interface
+}
+
+func (f *sharedInformerFactory) Extensions() extensions.Interface {
+	return extensions.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Networking() networking.Interface {
@@ -185,4 +193,8 @@ func (f *sharedInformerFactory) Networking() networking.Interface {
 
 func (f *sharedInformerFactory) Security() security.Interface {
 	return security.New(f, f.namespaces, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Telemetry() telemetry.Interface {
+	return telemetry.New(f, f.namespaces, f.tweakListOptions)
 }
