@@ -21,6 +21,7 @@ import "google/api/field_behavior.proto";
 // $description: Configuration affecting VMs onboarded into the mesh.
 // $location: https://istio.io/docs/reference/config/networking/workload-entry.html
 // $aliases: [/docs/reference/config/networking/v1beta1/workload-entry]
+// $mode: none
 
 // `WorkloadEntry` enables operators to describe the properties of a
 // single non-Kubernetes workload such as a VM or a bare metal server
@@ -256,6 +257,9 @@ option go_package = "istio.io/api/networking/v1beta1";
 // +genclient
 // +k8s:deepcopy-gen=true
 // -->
+// <!-- istio code generation tags
+// +istio.io/sync-from:networking/v1alpha3/workload_entry.proto
+// -->
 message WorkloadEntry {
   // Address associated with the network endpoint without the
   // port.  Domain names can be used if and only if the resolution is set
@@ -321,4 +325,3 @@ message WorkloadEntry {
   // ServiceEntry)
   string service_account = 7;
 };
-
