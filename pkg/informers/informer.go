@@ -286,3 +286,17 @@ func (i *multiNamespaceInformer) GetIndexers() map[string]cache.Indexer {
 
 	return res
 }
+
+func (i *multiNamespaceInformer) SetTransform(handler cache.TransformFunc) error {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	for _, informer := range i.informers {
+		err := informer.SetTransform(handler)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

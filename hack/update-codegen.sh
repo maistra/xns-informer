@@ -70,7 +70,6 @@ istio_group_versions=(
 
 gateway_api_group_versions=(
   sigs.k8s.io/gateway-api/apis/v1alpha2
-  // TODO: do we also need sigs.k8s.io/gateway-api/apis/v1alpha1?
 )
 
 "${PROJ_ROOT}/out/xns-informer-gen" \
@@ -96,8 +95,8 @@ gateway_api_group_versions=(
   --output-package "github.com/maistra/xns-informer/pkg/generated/gatewayapi" \
   --single-directory \
   --input-dirs "$(join_by , ${gateway_api_group_versions[@]})" \
-  --versioned-clientset-package "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned" \
-  --listers-package "sigs.k8s.io/gateway-api/pkg/client/listers/gateway" \
+  --versioned-clientset-package "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned" \
+  --listers-package "sigs.k8s.io/gateway-api/pkg/client/listers" \
   --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
 
 rsync -a --remove-source-files --delete \

@@ -29,8 +29,8 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 	apisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
-	versioned "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned"
-	v1alpha2 "sigs.k8s.io/gateway-api/pkg/client/listers/gateway/apis/v1alpha2"
+	versioned "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	v1alpha2 "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha2"
 )
 
 // TLSRouteInformer provides access to a shared informer and lister for
