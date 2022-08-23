@@ -29,6 +29,8 @@ type Interface interface {
 	DestinationRules() DestinationRuleInformer
 	// Gateways returns a GatewayInformer.
 	Gateways() GatewayInformer
+	// ProxyConfigs returns a ProxyConfigInformer.
+	ProxyConfigs() ProxyConfigInformer
 	// ServiceEntries returns a ServiceEntryInformer.
 	ServiceEntries() ServiceEntryInformer
 	// Sidecars returns a SidecarInformer.
@@ -37,6 +39,8 @@ type Interface interface {
 	VirtualServices() VirtualServiceInformer
 	// WorkloadEntries returns a WorkloadEntryInformer.
 	WorkloadEntries() WorkloadEntryInformer
+	// WorkloadGroups returns a WorkloadGroupInformer.
+	WorkloadGroups() WorkloadGroupInformer
 }
 
 type version struct {
@@ -60,6 +64,11 @@ func (v *version) Gateways() GatewayInformer {
 	return &gatewayInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
+// ProxyConfigs returns a ProxyConfigInformer.
+func (v *version) ProxyConfigs() ProxyConfigInformer {
+	return &proxyConfigInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
+}
+
 // ServiceEntries returns a ServiceEntryInformer.
 func (v *version) ServiceEntries() ServiceEntryInformer {
 	return &serviceEntryInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
@@ -78,4 +87,9 @@ func (v *version) VirtualServices() VirtualServiceInformer {
 // WorkloadEntries returns a WorkloadEntryInformer.
 func (v *version) WorkloadEntries() WorkloadEntryInformer {
 	return &workloadEntryInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
+}
+
+// WorkloadGroups returns a WorkloadGroupInformer.
+func (v *version) WorkloadGroups() WorkloadGroupInformer {
+	return &workloadGroupInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
