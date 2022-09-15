@@ -154,7 +154,7 @@ func NewSharedInformerFactory(client {{.clientSetInterface|raw}}, defaultResync 
 func NewSharedInformerFactoryWithOptions(client {{.clientSetInterface|raw}}, defaultResync {{.timeDuration|raw}}, options ...SharedInformerOption) SharedInformerFactory {
 	factory := &sharedInformerFactory{
 		client:           client,
-        namespaces:       {{.xnsNewNamespaceSet|raw}}(v1.NamespaceAll),
+        namespaces:       {{.xnsNewNamespaceSet|raw}}(),
 		defaultResync:    defaultResync,
 		informers:        make(map[{{.reflectType|raw}}]{{.cacheSharedIndexInformer|raw}}),
 		startedInformers: make(map[{{.reflectType|raw}}]bool),
