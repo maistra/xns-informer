@@ -251,7 +251,7 @@ func TestMultiNamespaceInformerEventHandlers(t *testing.T) {
 
 	// These tests use the fake client instead of a FakeControllerSource.
 	client := kubefake.NewSimpleClientset()
-	namespaceSet := xnsinformers.NewNamespaceSet(namespaces...)
+	namespaceSet := newNamespaceSet(namespaces...)
 
 	informer := xnsinformers.NewMultiNamespaceInformer(namespaceSet, 0, func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
@@ -329,4 +329,75 @@ func TestMultiNamespaceInformerEventHandlers(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Delete handler not called after namespace removal: %v", err)
 	}
+}
+
+func TestMultiNamespaceInformerHasSynced(t *testing.T) {
+	namespaceSet := xnsinformers.NewNamespaceSet()
+	hasSynced := false
+
+	informer := xnsinformers.NewMultiNamespaceInformer(namespaceSet, 0, func(namespace string) cache.SharedIndexInformer {
+		return mockInformer{
+			hasSynced: &hasSynced,
+		}
+	})
+
+	if informer.HasSynced() {
+		t.Fatalf("informer is synced, but shouldn't be because namespaces haven't been set yet")
+	}
+
+	namespaceSet.SetNamespaces("ns1", "ns2")
+
+	if informer.HasSynced() {
+		t.Fatalf("informer is synced, but shouldn't be because the underlying informers aren't synced")
+	}
+
+	hasSynced = true
+
+	if !informer.HasSynced() {
+		t.Fatalf("expected informer to be synced")
+	}
+}
+
+type mockInformer struct {
+	hasSynced *bool
+}
+
+func (m mockInformer) AddEventHandler(handler cache.ResourceEventHandler) {
+	panic("not implemented")
+}
+
+func (m mockInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) {
+	panic("not implemented")
+}
+
+func (m mockInformer) GetStore() cache.Store {
+	panic("not implemented")
+}
+
+func (m mockInformer) GetController() cache.Controller {
+	panic("not implemented")
+}
+
+func (m mockInformer) Run(stopCh <-chan struct{}) {
+	panic("not implemented")
+}
+
+func (m mockInformer) HasSynced() bool {
+	return *m.hasSynced
+}
+
+func (m mockInformer) LastSyncResourceVersion() string {
+	panic("not implemented")
+}
+
+func (m mockInformer) SetWatchErrorHandler(handler cache.WatchErrorHandler) error {
+	panic("not implemented")
+}
+
+func (m mockInformer) AddIndexers(indexers cache.Indexers) error {
+	panic("not implemented")
+}
+
+func (m mockInformer) GetIndexer() cache.Indexer {
+	panic("not implemented")
 }

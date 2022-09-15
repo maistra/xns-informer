@@ -29,7 +29,7 @@ func TestNamespaceSet(t *testing.T) {
 		},
 		{
 			name:         "initially populated",
-			namespaceSet: xnsinformers.NewNamespaceSet("ns-one"),
+			namespaceSet: newNamespaceSet("ns-one"),
 			testFunc: func(ns xnsinformers.NamespaceSet) {
 				ns.SetNamespaces("ns-one", "ns-two", "ns-three")
 				ns.SetNamespaces("new-ns")
@@ -80,6 +80,23 @@ func TestNamespaceSet(t *testing.T) {
 	}
 }
 
+func TestNamespaceSetInitialized(t *testing.T) {
+	set := xnsinformers.NewNamespaceSet()
+	if set.Initialized() {
+		t.Errorf("didn't expect new NamespaceSet to be initialized")
+	}
+
+	set.SetNamespaces("foo")
+	if !set.Initialized() {
+		t.Errorf("expected NamespaceSet to be initialized after invoking SetNamespaces()")
+	}
+
+	set.SetNamespaces( /* no namespaces */ )
+	if !set.Initialized() {
+		t.Errorf("expected NamespaceSet to still be initialized after invoking SetNamespaces() with no namespaces")
+	}
+}
+
 func TestNamespaceSetList(t *testing.T) {
 	testCases := []struct {
 		name         string
@@ -93,7 +110,7 @@ func TestNamespaceSetList(t *testing.T) {
 		},
 		{
 			name:         "populated",
-			namespaceSet: xnsinformers.NewNamespaceSet("c", "a", "b"),
+			namespaceSet: newNamespaceSet("c", "a", "b"),
 			expectedList: []string{"a", "b", "c"}, // Should be sorted.
 		},
 	}
@@ -118,13 +135,13 @@ func TestNamespaceSetContains(t *testing.T) {
 	}{
 		{
 			name:         "found",
-			namespaceSet: xnsinformers.NewNamespaceSet("c", "a", "b"),
+			namespaceSet: newNamespaceSet("c", "a", "b"),
 			search:       "b",
 			expected:     true,
 		},
 		{
 			name:         "not found",
-			namespaceSet: xnsinformers.NewNamespaceSet("e", "f", "g"),
+			namespaceSet: newNamespaceSet("e", "f", "g"),
 			search:       "z",
 			expected:     false,
 		},
@@ -139,4 +156,10 @@ func TestNamespaceSetContains(t *testing.T) {
 			}
 		})
 	}
+}
+
+func newNamespaceSet(namespaces ...string) xnsinformers.NamespaceSet {
+	set := xnsinformers.NewNamespaceSet()
+	set.SetNamespaces(namespaces...)
+	return set
 }
