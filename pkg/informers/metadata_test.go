@@ -27,6 +27,7 @@ import (
 // }
 
 func TestMetadataSharedInformerFactory(t *testing.T) {
+	ns := "ns-foo"
 	scenarios := []struct {
 		name        string
 		existingObj *metav1.PartialObjectMetadata
@@ -38,10 +39,10 @@ func TestMetadataSharedInformerFactory(t *testing.T) {
 		// scenario 1
 		{
 			name: "scenario 1: test if adding an object triggers AddFunc",
-			ns:   "ns-foo",
+			ns:   ns,
 			gvr:  schema.GroupVersionResource{Group: "extensions", Version: "v1beta1", Resource: "deployments"},
 			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeMetadataClient, _ *metav1.PartialObjectMetadata) *metav1.PartialObjectMetadata {
-				testObject := newPartialObjectMetadata("extensions/v1beta1", "Deployment", "ns-foo", "name-foo")
+				testObject := newPartialObjectMetadata("extensions/v1beta1", "Deployment", ns, "name-foo")
 				createdObj, err := fakeClient.Resource(gvr).Namespace(ns).(fake.MetadataClient).CreateFake(testObject, metav1.CreateOptions{})
 				if err != nil {
 					t.Error(err)
@@ -60,9 +61,9 @@ func TestMetadataSharedInformerFactory(t *testing.T) {
 		// scenario 2
 		{
 			name:        "scenario 2: tests if updating an object triggers UpdateFunc",
-			ns:          "ns-foo",
+			ns:          ns,
 			gvr:         schema.GroupVersionResource{Group: "extensions", Version: "v1beta1", Resource: "deployments"},
-			existingObj: newPartialObjectMetadata("extensions/v1beta1", "Deployment", "ns-foo", "name-foo"),
+			existingObj: newPartialObjectMetadata("extensions/v1beta1", "Deployment", ns, "name-foo"),
 			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeMetadataClient, testObject *metav1.PartialObjectMetadata) *metav1.PartialObjectMetadata {
 				if testObject.Annotations == nil {
 					testObject.Annotations = make(map[string]string)
@@ -86,9 +87,9 @@ func TestMetadataSharedInformerFactory(t *testing.T) {
 		// scenario 3
 		{
 			name:        "scenario 3: test if deleting an object triggers DeleteFunc",
-			ns:          "ns-foo",
+			ns:          ns,
 			gvr:         schema.GroupVersionResource{Group: "extensions", Version: "v1beta1", Resource: "deployments"},
-			existingObj: newPartialObjectMetadata("extensions/v1beta1", "Deployment", "ns-foo", "name-foo"),
+			existingObj: newPartialObjectMetadata("extensions/v1beta1", "Deployment", ns, "name-foo"),
 			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeMetadataClient, testObject *metav1.PartialObjectMetadata) *metav1.PartialObjectMetadata {
 				err := fakeClient.Resource(gvr).Namespace(ns).Delete(context.TODO(), testObject.GetName(), metav1.DeleteOptions{})
 				if err != nil {
@@ -121,6 +122,7 @@ func TestMetadataSharedInformerFactory(t *testing.T) {
 			}
 			fakeClient := fake.NewSimpleMetadataClient(scheme, objs...)
 			target := xnsinformers.NewMetadataSharedInformerFactory(fakeClient, 0)
+			target.SetNamespaces(ns)
 
 			// act
 			informerListerForGvr := target.ForResource(ts.gvr)
