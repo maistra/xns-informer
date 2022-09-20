@@ -170,7 +170,9 @@ func TestSharedInformerWatchDisruption(t *testing.T) {
 	}
 
 	for _, listener := range listeners {
+		listener.lock.Lock()
 		listener.receivedItemNames = []string{}
+		listener.lock.Unlock()
 	}
 
 	listenerNoResync.expectedItemNames = sets.NewString("pod2", "pod3")
@@ -245,6 +247,7 @@ func TestMultiNamespaceInformerEventHandlers(t *testing.T) {
 	cm1 := internaltesting.NewConfigMap(namespaces[0], "cm1", nil)
 	cm2 := internaltesting.NewConfigMap(namespaces[1], "cm2", nil)
 
+	lock := sync.RWMutex{}
 	addFuncCalled := false
 	updateFuncCalled := false
 	deleteFuncCalled := false
@@ -271,13 +274,19 @@ func TestMultiNamespaceInformerEventHandlers(t *testing.T) {
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(_ interface{}) {
+			lock.Lock()
 			addFuncCalled = true
+			lock.Unlock()
 		},
 		UpdateFunc: func(_, _ interface{}) {
+			lock.Lock()
 			updateFuncCalled = true
+			lock.Unlock()
 		},
 		DeleteFunc: func(_ interface{}) {
+			lock.Lock()
 			deleteFuncCalled = true
+			lock.Unlock()
 		},
 	})
 
@@ -310,6 +319,8 @@ func TestMultiNamespaceInformerEventHandlers(t *testing.T) {
 
 	// Wait for all handler functions to be called.
 	err = wait.PollImmediate(100*time.Millisecond, 1*time.Minute, func() (bool, error) {
+		lock.RLock()
+		defer lock.RUnlock()
 		return addFuncCalled && updateFuncCalled && deleteFuncCalled, nil
 	})
 
