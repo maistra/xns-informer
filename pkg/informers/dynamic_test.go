@@ -203,16 +203,15 @@ func TestDynamicSharedInformerFactory(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 			scheme := runtime.NewScheme()
-			err := extensionsv1beta1.AddToScheme(scheme)
-			if err != nil {
-				t.Fatalf("couldn't add appsv1 to scheme: %v", err)
-			}
 			informerReceiveObjectCh := make(chan *unstructured.Unstructured, 1)
 			objs := []runtime.Object{}
 			if ts.existingObj != nil {
 				objs = append(objs, ts.existingObj)
 			}
-			fakeClient := fake.NewSimpleDynamicClient(scheme, objs...)
+			gvrToListKind := map[schema.GroupVersionResource]string{
+				extensionsv1beta1.SchemeGroupVersion.WithResource("deployments"): "DeploymentList",
+			}
+			fakeClient := fake.NewSimpleDynamicClientWithCustomListKinds(scheme, gvrToListKind, objs...)
 			target := xnsinformers.NewDynamicSharedInformerFactory(fakeClient, 0)
 			target.SetNamespaces(ns)
 
