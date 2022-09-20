@@ -96,8 +96,7 @@ service_apis_group_versions=(
   --listers-package "sigs.k8s.io/service-apis/pkg/client/listers" \
   --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
 
-rsync -a --remove-source-files --delete \
-	  "${PROJ_ROOT}/out/github.com/maistra/xns-informer/pkg/generated/" \
-	  "${PROJ_ROOT}/pkg/generated"
+rm -r "${PROJ_ROOT}/pkg/generated"
+mv "${PROJ_ROOT}/out/github.com/maistra/xns-informer/pkg/generated/" "${PROJ_ROOT}/pkg/generated"
 
 rm -rd "${PROJ_ROOT}/out/github.com"
