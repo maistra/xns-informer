@@ -103,7 +103,7 @@ func newInformer(obj runtime.Object, lws map[string]cache.ListerWatcher) xnsinfo
 		namespaces = append(namespaces, ns)
 	}
 
-	namespaceSet.SetNamespaces(namespaces...)
+	namespaceSet.SetNamespaces(namespaces)
 
 	return xnsinformers.NewMultiNamespaceInformer(namespaceSet, resync, func(ns string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(lws[ns], obj, resync, indexers)
@@ -254,7 +254,7 @@ func TestMultiNamespaceInformerEventHandlers(t *testing.T) {
 
 	// These tests use the fake client instead of a FakeControllerSource.
 	client := kubefake.NewSimpleClientset()
-	namespaceSet := newNamespaceSet(namespaces...)
+	namespaceSet := xnsinformers.NewNamespaceSet(namespaces...)
 
 	informer := xnsinformers.NewMultiNamespaceInformer(namespaceSet, 0, func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
@@ -356,7 +356,7 @@ func TestMultiNamespaceInformerHasSynced(t *testing.T) {
 		t.Fatalf("informer is synced, but shouldn't be because namespaces haven't been set yet")
 	}
 
-	namespaceSet.SetNamespaces("ns1", "ns2")
+	namespaceSet.SetNamespaces([]string{"ns1", "ns2"})
 
 	if informer.HasSynced() {
 		t.Fatalf("informer is synced, but shouldn't be because the underlying informers aren't synced")
