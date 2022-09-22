@@ -18,14 +18,14 @@ import (
 // MetadataSharedInformerFactory provides access to shared informers and listers for metadata client.
 type MetadataSharedInformerFactory interface {
 	Start(stopCh <-chan struct{})
-	SetNamespaces(namespaces ...string)
+	SetNamespaces(namespaces []string)
 	ForResource(gvr schema.GroupVersionResource) informers.GenericInformer
 	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
 }
 
 // NewMetadataSharedInformerFactory constructs a new instance of metadataSharedInformerFactory for all namespaces.
 func NewMetadataSharedInformerFactory(client metadata.Interface, defaultResync time.Duration) MetadataSharedInformerFactory {
-	namespaces := NewNamespaceSet()
+	namespaces := NewNamespaceSet(metav1.NamespaceAll)
 	return NewFilteredMetadataSharedInformerFactory(client, defaultResync, namespaces, nil)
 }
 
@@ -74,11 +74,11 @@ func (f *metadataSharedInformerFactory) ForResource(gvr schema.GroupVersionResou
 }
 
 // SetNamespaces updates the set of namespaces for all current and future informers.
-func (f *metadataSharedInformerFactory) SetNamespaces(namespaces ...string) {
+func (f *metadataSharedInformerFactory) SetNamespaces(namespaces []string) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
-	f.namespaces.SetNamespaces(namespaces...)
+	f.namespaces.SetNamespaces(namespaces)
 }
 
 // Start initializes all requested informers.
