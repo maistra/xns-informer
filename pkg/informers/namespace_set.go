@@ -42,22 +42,30 @@ func (h NamespaceSetHandlerFuncs) OnRemove(namespace string) {
 type NamespaceSet interface {
 	// Initialized returns true if SetNamespaces() has been called at least once
 	Initialized() bool
-	SetNamespaces(namespaces ...string)
+	SetNamespaces(namespaces []string)
 	AddHandler(handler NamespaceSetHandler)
 	Contains(namespace string) bool
 	List() []string
 }
 
 type namespaceSet struct {
-	initialized bool
-	lock        sync.Mutex
-	namespaces  sets.Set
-	handlers    []NamespaceSetHandler
+	lock       sync.Mutex
+	namespaces sets.Set
+	handlers   []NamespaceSetHandler
 }
 
-// NewNamespaceSet returns a new NamespaceSet.
-func NewNamespaceSet() NamespaceSet {
-	return &namespaceSet{}
+// NewNamespaceSet returns a new NamespaceSet tracking the given namespaces.
+func NewNamespaceSet(namespaces ...string) NamespaceSet {
+	n := &namespaceSet{}
+	n.SetNamespaces(namespaces)
+
+	return n
+}
+
+// NewUninitializedNamespaceSet returns a new uninitialized NamespaceSet
+func NewUninitializedNamespaceSet() NamespaceSet {
+	n := &namespaceSet{}
+	return n
 }
 
 // Contains indicates whether the given namespace is in the set.
@@ -83,19 +91,20 @@ func (n *namespaceSet) Initialized() bool {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
-	return n.initialized
+	return n.namespaces != nil
 }
 
 // SetNamespaces replaces the set of namespaces.
-func (n *namespaceSet) SetNamespaces(namespaces ...string) {
+func (n *namespaceSet) SetNamespaces(namespaces []string) {
 	n.lock.Lock()
 	defer n.lock.Unlock()
 
-	if !n.initialized {
-		n.initialized = true
+	var newNamespaceSet sets.Set
+	if namespaces == nil {
+		newNamespaceSet = nil
+	} else {
+		newNamespaceSet = sets.NewSet(namespaces...)
 	}
-
-	newNamespaceSet := sets.NewSet(namespaces...)
 
 	// If the set of namespaces, includes metav1.NamespaceAll, then it
 	// only makes sense to track that.

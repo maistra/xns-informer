@@ -87,7 +87,7 @@ func WithTweakListOptions(tweakListOptions internalinterfaces.TweakListOptionsFu
 // WithNamespaces limits the SharedInformerFactory to the specified namespaces.
 func WithNamespaces(namespaces ...string) SharedInformerOption {
 	return func(factory *sharedInformerFactory) *sharedInformerFactory {
-		factory.SetNamespaces(namespaces...)
+		factory.SetNamespaces(namespaces)
 		return factory
 	}
 }
@@ -101,7 +101,7 @@ func NewSharedInformerFactory(client kubernetes.Interface, defaultResync time.Du
 func NewSharedInformerFactoryWithOptions(client kubernetes.Interface, defaultResync time.Duration, options ...SharedInformerOption) SharedInformerFactory {
 	factory := &sharedInformerFactory{
 		client:           client,
-		namespaces:       informers.NewNamespaceSet(),
+		namespaces:       informers.NewNamespaceSet(v1.NamespaceAll),
 		defaultResync:    defaultResync,
 		informers:        make(map[reflect.Type]cache.SharedIndexInformer),
 		startedInformers: make(map[reflect.Type]bool),
@@ -117,11 +117,11 @@ func NewSharedInformerFactoryWithOptions(client kubernetes.Interface, defaultRes
 }
 
 // SetNamespaces updates the set of namespaces for all current and future informers.
-func (f *sharedInformerFactory) SetNamespaces(namespaces ...string) {
+func (f *sharedInformerFactory) SetNamespaces(namespaces []string) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
-	f.namespaces.SetNamespaces(namespaces...)
+	f.namespaces.SetNamespaces(namespaces)
 }
 
 // Start initializes all requested informers.
@@ -186,7 +186,7 @@ func (f *sharedInformerFactory) InformerFor(obj runtime.Object, newFunc internal
 // API group versions.
 type SharedInformerFactory interface {
 	internalinterfaces.SharedInformerFactory
-	SetNamespaces(namespaces ...string)
+	SetNamespaces(namespaces []string)
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
