@@ -22,17 +22,17 @@ func TestNamespaceSet(t *testing.T) {
 			name:         "initially empty",
 			namespaceSet: xnsinformers.NewNamespaceSet(),
 			testFunc: func(ns xnsinformers.NamespaceSet) {
-				ns.SetNamespaces("ns-one", "ns-two")
+				ns.SetNamespaces([]string{"ns-one", "ns-two"})
 			},
 			expectedAdds:    []string{"ns-one", "ns-two"},
 			expectedRemoves: nil,
 		},
 		{
 			name:         "initially populated",
-			namespaceSet: newNamespaceSet("ns-one"),
+			namespaceSet: xnsinformers.NewNamespaceSet("ns-one"),
 			testFunc: func(ns xnsinformers.NamespaceSet) {
-				ns.SetNamespaces("ns-one", "ns-two", "ns-three")
-				ns.SetNamespaces("new-ns")
+				ns.SetNamespaces([]string{"ns-one", "ns-two", "ns-three"})
+				ns.SetNamespaces([]string{"new-ns"})
 			},
 			expectedAdds:    []string{"ns-one", "ns-two", "ns-three", "new-ns"},
 			expectedRemoves: []string{"ns-one", "ns-two", "ns-three"},
@@ -42,10 +42,19 @@ func TestNamespaceSet(t *testing.T) {
 			namespaceSet: xnsinformers.NewNamespaceSet(),
 			testFunc: func(ns xnsinformers.NamespaceSet) {
 				// Adding metav1.NamespaceAll means all others are ignored.
-				ns.SetNamespaces(metav1.NamespaceAll, "ns-ignored")
+				ns.SetNamespaces([]string{metav1.NamespaceAll, "ns-ignored"})
 			},
 			expectedAdds:    []string{metav1.NamespaceAll},
 			expectedRemoves: nil,
+		},
+		{
+			name:         "uninitialized later",
+			namespaceSet: xnsinformers.NewNamespaceSet("ns-one"),
+			testFunc: func(ns xnsinformers.NamespaceSet) {
+				ns.SetNamespaces(nil)
+			},
+			expectedAdds:    []string{"ns-one"},
+			expectedRemoves: []string{"ns-one"},
 		},
 	}
 
@@ -86,14 +95,19 @@ func TestNamespaceSetInitialized(t *testing.T) {
 		t.Errorf("didn't expect new NamespaceSet to be initialized")
 	}
 
-	set.SetNamespaces("foo")
+	set.SetNamespaces([]string{"foo"})
 	if !set.Initialized() {
 		t.Errorf("expected NamespaceSet to be initialized after invoking SetNamespaces()")
 	}
 
-	set.SetNamespaces( /* no namespaces */ )
+	set.SetNamespaces([]string{})
 	if !set.Initialized() {
-		t.Errorf("expected NamespaceSet to still be initialized after invoking SetNamespaces() with no namespaces")
+		t.Errorf("expected NamespaceSet to still be initialized after invoking SetNamespaces() with empty namespace slice")
+	}
+
+	set.SetNamespaces(nil)
+	if set.Initialized() {
+		t.Errorf("didn't expect NamespaceSet to still be initialized after invoking SetNamespaces() with nil namespace slice")
 	}
 }
 
@@ -109,8 +123,13 @@ func TestNamespaceSetList(t *testing.T) {
 			expectedList: []string{},
 		},
 		{
+			name:         "uninitialized",
+			namespaceSet: xnsinformers.NewUninitializedNamespaceSet(),
+			expectedList: []string{},
+		},
+		{
 			name:         "populated",
-			namespaceSet: newNamespaceSet("c", "a", "b"),
+			namespaceSet: xnsinformers.NewNamespaceSet("c", "a", "b"),
 			expectedList: []string{"a", "b", "c"}, // Should be sorted.
 		},
 	}
@@ -134,14 +153,26 @@ func TestNamespaceSetContains(t *testing.T) {
 		expected     bool
 	}{
 		{
+			name:         "empty",
+			namespaceSet: xnsinformers.NewNamespaceSet(),
+			search:       "a",
+			expected:     false,
+		},
+		{
+			name:         "uninitialized",
+			namespaceSet: xnsinformers.NewUninitializedNamespaceSet(),
+			search:       "a",
+			expected:     false,
+		},
+		{
 			name:         "found",
-			namespaceSet: newNamespaceSet("c", "a", "b"),
+			namespaceSet: xnsinformers.NewNamespaceSet("c", "a", "b"),
 			search:       "b",
 			expected:     true,
 		},
 		{
 			name:         "not found",
-			namespaceSet: newNamespaceSet("e", "f", "g"),
+			namespaceSet: xnsinformers.NewNamespaceSet("e", "f", "g"),
 			search:       "z",
 			expected:     false,
 		},
@@ -156,10 +187,4 @@ func TestNamespaceSetContains(t *testing.T) {
 			}
 		})
 	}
-}
-
-func newNamespaceSet(namespaces ...string) xnsinformers.NamespaceSet {
-	set := xnsinformers.NewNamespaceSet()
-	set.SetNamespaces(namespaces...)
-	return set
 }
