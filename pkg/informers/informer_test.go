@@ -412,3 +412,7 @@ func (m mockInformer) AddIndexers(indexers cache.Indexers) error {
 func (m mockInformer) GetIndexer() cache.Indexer {
 	panic("not implemented")
 }
+
+func (m mockInformer) SetTransform(handler cache.TransformFunc) error {
+	panic("not implemented")
+}
