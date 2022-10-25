@@ -70,6 +70,7 @@ istio_group_versions=(
 
 gateway_api_group_versions=(
   sigs.k8s.io/gateway-api/apis/v1alpha2
+  sigs.k8s.io/gateway-api/apis/v1beta1
 )
 
 "${PROJ_ROOT}/out/xns-informer-gen" \
