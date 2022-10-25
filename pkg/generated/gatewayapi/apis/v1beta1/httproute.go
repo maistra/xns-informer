@@ -57,8 +57,7 @@ func NewHTTPRouteInformer(client versioned.Interface, namespaces informers.Names
 // NewFilteredHTTPRouteInformer constructs a new informer for HTTPRoute type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredHTTPRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet,
-	resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredHTTPRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	newInformer := func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
 			&cache.ListWatch{

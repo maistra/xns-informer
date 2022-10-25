@@ -47,8 +47,7 @@ type gatewayClassInformer struct {
 // NewGatewayClassInformer constructs a new informer for GatewayClass type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewGatewayClassInformer(client versioned.Interface,
-	resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+func NewGatewayClassInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewFilteredGatewayClassInformer(client, resyncPeriod, indexers, nil)
 }
 
