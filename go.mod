@@ -1,6 +1,6 @@
 module github.com/maistra/xns-informer
 
-go 1.17
+go 1.19
 
 replace sigs.k8s.io/controller-runtime v0.10.3 => sigs.k8s.io/controller-runtime v0.11.2
 
