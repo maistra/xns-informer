@@ -1,10 +1,9 @@
 clean:
-	rm -rf vendor/ out/
+	rm -rf out/
 
 deps:
 	go mod tidy -go=1.19
 	go mod download
-	go mod vendor
 
 build: deps
 	go build -o "./out/xns-informer-gen" ./cmd/xns-informer-gen
