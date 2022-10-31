@@ -1,8 +1,4 @@
-/out/
-
-# Vendor
-vendor/
-.vendor-new/
+out/
 
 ### Go ###
 # Binaries for programs and plugins
