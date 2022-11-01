@@ -1,3 +1,6 @@
+FINDFILES=find . \( -path ./.git -o -path ./.github -o -path ./tmp -o -path ./vendor \) -prune -o -type f
+XARGS = xargs -0 -r
+
 clean:
 	rm -rf out/
 
@@ -20,6 +23,16 @@ gen-check: gen check-clean-repo
 check-clean-repo:
 	@./hack/check_clean_repo.sh
 
+################################################################################
+# linting
+################################################################################
+.PHONY: lint-scripts
+lint-scripts:
+	@${FINDFILES} -name '*.sh' -print0 | ${XARGS} shellcheck
+
+.PHONY: lint
+lint: lint-scripts
+
 .DEFAULT_GOAL:=all
 .PHONY: all
-all: clean build test gen gen-check check-clean-repo
+all: clean build test lint gen gen-check check-clean-repo

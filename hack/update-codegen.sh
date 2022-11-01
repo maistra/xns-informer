@@ -77,7 +77,7 @@ gateway_api_group_versions=(
   --output-base "${PROJ_ROOT}/out" \
   --output-package "github.com/maistra/xns-informer/pkg/generated/kube" \
   --single-directory \
-  --input-dirs "$(join_by , ${k8s_group_versions[@]})" \
+  --input-dirs "$(join_by , "${k8s_group_versions[@]}")" \
   --versioned-clientset-package "k8s.io/client-go/kubernetes" \
   --listers-package "k8s.io/client-go/listers" \
   --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
@@ -86,7 +86,7 @@ gateway_api_group_versions=(
   --output-base "${PROJ_ROOT}/out" \
   --output-package "github.com/maistra/xns-informer/pkg/generated/istio" \
   --single-directory \
-  --input-dirs "$(join_by , ${istio_group_versions[@]})" \
+  --input-dirs "$(join_by , "${istio_group_versions[@]}")" \
   --versioned-clientset-package "istio.io/client-go/pkg/clientset/versioned" \
   --listers-package "istio.io/client-go/pkg/listers" \
   --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
@@ -95,7 +95,7 @@ gateway_api_group_versions=(
   --output-base "${PROJ_ROOT}/out" \
   --output-package "github.com/maistra/xns-informer/pkg/generated/gatewayapi" \
   --single-directory \
-  --input-dirs "$(join_by , ${gateway_api_group_versions[@]})" \
+  --input-dirs "$(join_by , "${gateway_api_group_versions[@]}")" \
   --versioned-clientset-package "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned" \
   --listers-package "sigs.k8s.io/gateway-api/pkg/client/listers" \
   --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
