@@ -14,7 +14,7 @@ function header {
 
 dryRun=false
 skipInDryRun() {
-  if $dryRun; then echo "# $@";  fi
+  if $dryRun; then echo "# $*";  fi
   if ! $dryRun; then "$@";  fi
 }
 
@@ -77,7 +77,7 @@ while test $# -gt 0; do
             shift
             ;;
     *)
-            die "$(basename "$0"): unknown flag $(echo $1 | cut -d'=' -f 1)"
+            die "$(basename "$0"): unknown flag $(echo "$1" | cut -d'=' -f 1)"
             exit 1
             ;;
   esac
@@ -103,7 +103,7 @@ if ! command -v deptree &>/dev/null; then
   fi
 fi
 
-istioDeps=$(curl -s https://raw.githubusercontent.com/istio/istio/${version}/go.mod)
+istioDeps=$(curl -s https://raw.githubusercontent.com/istio/istio/"${version}"/go.mod)
 
 mapfile -t deps < <(go mod graph | deptree -d 1 | cut -d' ' -f 2 | tr -s '\n' | sort | grep -v "tree:")
 mapfile -t replaceDeps < <(echo "${istioDeps}" | grep -Po 'replace \K.*')
@@ -115,7 +115,7 @@ for dep in "${deps[@]}"; do
     istioDep=$(echo "${istioDeps}" | grep -v "replace" | grep "${lib} " || true)
     if [ -n "$istioDep" ]; then    
         newVersion=${istioDep#*\ }
-        skipInDryRun go mod edit -require=${lib}@${newVersion%"// indirect"}
+        skipInDryRun go mod edit -require="${lib}@${newVersion%"// indirect"}"
     fi
 done
 
@@ -123,15 +123,14 @@ header "Adding explicit replaces"
 for dep in "${replaceDeps[@]}"; do
     name=${dep%%\ *}
     newVersion=${dep##*\ }
-    isInArray "${name}" "${deps[*]}"
-    if [[ $? -eq  0 ]]; then
-        skipInDryRun go mod edit -replace=${name}=${name}@${newVersion}
+    if isInArray "${name}" "${deps[*]}"; then
+        skipInDryRun go mod edit -replace="${name}=${name}@${newVersion}"
     fi    
 done
 
 header "Adding explicit excludes"
 for dep in "${excludeDeps[@]}"; do
-    skipInDryRun go mod edit -exclude=${dep}
+    skipInDryRun go mod edit -exclude="${dep}"
 done
 
 header "Updating go.sum"
