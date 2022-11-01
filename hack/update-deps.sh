@@ -93,14 +93,7 @@ if ! command -v curl &>/dev/null; then
 fi
 
 if ! command -v deptree &>/dev/null; then
-  echo "deptree is required."
-  read -p "Would you like to install it? [Y/n]? " -n 1 -r
-  if [[ $REPLY =~ ^[Yy]$ ]]
-  then
-    go install -mod=readonly github.com/vc60er/deptree@latest
-  else
-    exit 1
-  fi
+  go install -mod=readonly github.com/vc60er/deptree@3cc6257204e26c85723f8e87bdfd9e63f24f2910
 fi
 
 istioDeps=$(curl -s https://raw.githubusercontent.com/istio/istio/"${version}"/go.mod)
