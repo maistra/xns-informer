@@ -1,7 +1,14 @@
-build:
+clean:
+	rm -rf out/
+
+deps:
+	go mod tidy -go=1.19
+	go mod download
+
+build: deps
 	go build -o "./out/xns-informer-gen" ./cmd/xns-informer-gen
 
-test:
+test: build
 	go vet ./...
 	go test -race -v ./...
 
@@ -13,4 +20,6 @@ gen-check: gen check-clean-repo
 check-clean-repo:
 	@./hack/check_clean_repo.sh
 
-.PHONY: build test gen gen-check check-clean-repo
+.DEFAULT_GOAL:=all
+.PHONY: all
+all: clean build test gen gen-check check-clean-repo
