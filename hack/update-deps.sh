@@ -103,15 +103,15 @@ mapfile -t excludeDeps < <(echo "${istioDeps}" | grep -Po 'exclude \K.*' | sed -
 
 header "Updating dependencies from istio@${version}"
 for dep in "${deps[@]}"; do
-    lib="${dep%@*}"
-    istioDep=$(echo "${istioDeps}" | grep -v "replace" | grep "${lib} " || true)
+    name="${dep%@*}" # dependency in graph is stored as name@version - take name from the variable
+    istioDep=$(echo "${istioDeps}" | grep -v "replace" | grep -v "exclude" | grep "${name} " || true)
     if [ -n "$istioDep" ]; then    
-        newVersion=${istioDep#*\ }
-        skipInDryRun go mod edit -require="${lib}@${newVersion%"// indirect"}"
+        newVersion=${istioDep#*\ } # take new version from istio go.mod (it's a text file)
+        skipInDryRun go mod edit -require="${name}@${newVersion%"// indirect"}" # strip off "// indirect" comment if any
     fi
 done
 
-header "Adding explicit replaces"
+header "Adding explicit replaces from istio@${version} go.mod"
 for dep in "${replaceDeps[@]}"; do
     name=${dep%%\ *}
     newVersion=${dep##*\ }
@@ -120,7 +120,7 @@ for dep in "${replaceDeps[@]}"; do
     fi    
 done
 
-header "Adding explicit excludes"
+header "Adding explicit excludes from istio@${version} go.mod"
 for dep in "${excludeDeps[@]}"; do
     skipInDryRun go mod edit -exclude="${dep}"
 done
