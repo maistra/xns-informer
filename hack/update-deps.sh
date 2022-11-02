@@ -92,13 +92,12 @@ if ! command -v curl &>/dev/null; then
   exit 1
 fi
 
-if ! command -v deptree &>/dev/null; then
-  go install -mod=readonly github.com/vc60er/deptree@3cc6257204e26c85723f8e87bdfd9e63f24f2910
-fi
+
+deeptreeCmd="go run -mod=readonly github.com/vc60er/deptree@3cc6257204e26c85723f8e87bdfd9e63f24f2910"
 
 istioDeps=$(curl -sfL https://raw.githubusercontent.com/istio/istio/"${version}"/go.mod)
 
-mapfile -t deps < <(go mod graph | deptree -d 1 | cut -d' ' -f 2 | tr -s '\n' | sort | grep -v "tree:")
+mapfile -t deps < <(go mod graph | bash -c "${deeptreeCmd} -d 1" | cut -d' ' -f 2 | tr -s '\n' | sort | grep -v "tree:")
 mapfile -t replaceDeps < <(echo "${istioDeps}" | grep -Po 'replace \K.*')
 mapfile -t excludeDeps < <(echo "${istioDeps}" | grep -Po 'exclude \K.*' | sed -e "s/ /@/g")
 
