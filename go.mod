@@ -2,11 +2,9 @@ module github.com/maistra/xns-informer
 
 go 1.19
 
-replace sigs.k8s.io/controller-runtime v0.10.3 => sigs.k8s.io/controller-runtime v0.11.2
-
 require (
 	github.com/spf13/pflag v1.0.5
-	istio.io/client-go v1.16.0-beta.1.0.20221026014218-7c812364cece
+	istio.io/client-go v1.16.0-beta.2.0.20221102013820-4276379da487
 	k8s.io/api v0.25.1
 	k8s.io/apimachinery v0.25.1
 	k8s.io/client-go v0.25.1
@@ -66,7 +64,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	istio.io/api v0.0.0-20221026013620-ffb8a5483c63 // indirect
+	istio.io/api v0.0.0-20221102013421-7906f6f2bcb5 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803164354-a70c9af30aea // indirect
 	k8s.io/utils v0.0.0-20220823124924-e9cbc92d1a73 // indirect
 	sigs.k8s.io/controller-runtime v0.13.0 // indirect
