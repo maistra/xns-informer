@@ -85,7 +85,8 @@ func NewSharedInformerFactory(client versioned.Interface, defaultResync time.Dur
 }
 
 // NewSharedInformerFactoryWithOptions constructs a new instance of a SharedInformerFactory with additional options.
-func NewSharedInformerFactoryWithOptions(client versioned.Interface, defaultResync time.Duration, options ...SharedInformerOption) SharedInformerFactory {
+func NewSharedInformerFactoryWithOptions(client versioned.Interface, defaultResync time.Duration,
+	options ...SharedInformerOption) SharedInformerFactory {
 	factory := &sharedInformerFactory{
 		client:           client,
 		namespaces:       informers.NewNamespaceSet(v1.NamespaceAll),

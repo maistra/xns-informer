@@ -98,7 +98,8 @@ func NewSharedInformerFactory(client kubernetes.Interface, defaultResync time.Du
 }
 
 // NewSharedInformerFactoryWithOptions constructs a new instance of a SharedInformerFactory with additional options.
-func NewSharedInformerFactoryWithOptions(client kubernetes.Interface, defaultResync time.Duration, options ...SharedInformerOption) SharedInformerFactory {
+func NewSharedInformerFactoryWithOptions(client kubernetes.Interface, defaultResync time.Duration,
+	options ...SharedInformerOption) SharedInformerFactory {
 	factory := &sharedInformerFactory{
 		client:           client,
 		namespaces:       informers.NewNamespaceSet(v1.NamespaceAll),
