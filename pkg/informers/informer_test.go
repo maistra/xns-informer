@@ -11,7 +11,8 @@ import (
 	"testing"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
+	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
+	internaltesting "github.com/maistra/xns-informer/pkg/internal/testing"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,9 +23,6 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 	fcache "k8s.io/client-go/tools/cache/testing"
-
-	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
-	internaltesting "github.com/maistra/xns-informer/pkg/internal/testing"
 )
 
 type testListener struct {
@@ -48,8 +46,8 @@ func (l *testListener) OnAdd(obj interface{}) {
 	l.handle(obj)
 }
 
-func (l *testListener) OnUpdate(old, new interface{}) {
-	l.handle(new)
+func (l *testListener) OnUpdate(old, newObject interface{}) {
+	l.handle(newObject)
 }
 
 func (l *testListener) OnDelete(obj interface{}) {
@@ -266,7 +264,7 @@ func TestMultiNamespaceInformerEventHandlers(t *testing.T) {
 					return client.CoreV1().ConfigMaps(namespace).Watch(ctx, options)
 				},
 			},
-			&corev1.ConfigMap{},
+			&v1.ConfigMap{},
 			0,
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 		)

@@ -5,9 +5,8 @@ import (
 	"sort"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNamespaceSet(t *testing.T) {

@@ -35,7 +35,9 @@ func NewDynamicSharedInformerFactory(client dynamic.Interface, defaultResync tim
 
 // NewFilteredDynamicSharedInformerFactory constructs a new instance of dynamicSharedInformerFactory.
 // Listers obtained via this factory will be subject to the same filters as specified here.
-func NewFilteredDynamicSharedInformerFactory(client dynamic.Interface, defaultResync time.Duration, namespaces NamespaceSet, tweakListOptions TweakListOptionsFunc) DynamicSharedInformerFactory {
+func NewFilteredDynamicSharedInformerFactory(client dynamic.Interface, defaultResync time.Duration, namespaces NamespaceSet,
+	tweakListOptions TweakListOptionsFunc,
+) DynamicSharedInformerFactory {
 	return &dynamicSharedInformerFactory{
 		client:           client,
 		defaultResync:    defaultResync,
@@ -129,7 +131,9 @@ func (f *dynamicSharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) 
 }
 
 // NewFilteredDynamicInformer constructs a new informer for a dynamic type.
-func NewFilteredDynamicInformer(client dynamic.Interface, gvr schema.GroupVersionResource, namespaces NamespaceSet, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions TweakListOptionsFunc) informers.GenericInformer {
+func NewFilteredDynamicInformer(client dynamic.Interface, gvr schema.GroupVersionResource, namespaces NamespaceSet, resyncPeriod time.Duration,
+	indexers cache.Indexers, tweakListOptions TweakListOptionsFunc,
+) informers.GenericInformer {
 	newInformer := func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
 			&cache.ListWatch{

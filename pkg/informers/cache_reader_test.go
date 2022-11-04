@@ -4,14 +4,13 @@ import (
 	"sort"
 	"testing"
 
+	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
+	internaltesting "github.com/maistra/xns-informer/pkg/internal/testing"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
-
-	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
-	internaltesting "github.com/maistra/xns-informer/pkg/internal/testing"
 )
 
 var cacheReaderTests = []struct {
@@ -98,7 +97,6 @@ func TestCacheReaderGetIndexers(t *testing.T) {
 			if len(gotIndexers) != 1 || gotIndexers[cache.NamespaceIndex] == nil {
 				t.Errorf("Wrong number of indexers or missing namespace indexer!")
 			}
-
 		})
 	}
 }

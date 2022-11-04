@@ -4,10 +4,9 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/maistra/xns-informer/pkg/internal/sets"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-
-	"github.com/maistra/xns-informer/pkg/internal/sets"
 )
 
 // NamespaceSetHandler handles add and remove events for namespace sets.

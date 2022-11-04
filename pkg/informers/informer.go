@@ -27,13 +27,6 @@ type MultiNamespaceInformer interface {
 // NewInformerFunc returns a new informer for a given namespace.
 type NewInformerFunc func(namespace string) cache.SharedIndexInformer
 
-// informerData holds a single namespaced informer.
-type informerData struct {
-	informer cache.SharedIndexInformer
-	stopCh   chan struct{}
-	started  bool
-}
-
 // eventHandlerData holds an event handler and its resync period.
 type eventHandlerData struct {
 	handler      cache.ResourceEventHandler
@@ -137,7 +130,7 @@ func (i *multiNamespaceInformer) AddNamespace(namespace string) {
 
 	// Add indexers to the new informer.
 	for _, idx := range i.indexers {
-		informer.AddIndexers(idx)
+		_ = informer.AddIndexers(idx)
 	}
 
 	// Add event handlers to the new informer.

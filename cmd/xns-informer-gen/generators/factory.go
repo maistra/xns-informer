@@ -24,7 +24,6 @@ import (
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
-
 	"k8s.io/klog/v2"
 )
 
@@ -151,7 +150,8 @@ func NewSharedInformerFactory(client {{.clientSetInterface|raw}}, defaultResync 
 }
 
 // NewSharedInformerFactoryWithOptions constructs a new instance of a SharedInformerFactory with additional options.
-func NewSharedInformerFactoryWithOptions(client {{.clientSetInterface|raw}}, defaultResync {{.timeDuration|raw}}, options ...SharedInformerOption) SharedInformerFactory {
+func NewSharedInformerFactoryWithOptions(client {{.clientSetInterface|raw}}, defaultResync {{.timeDuration|raw}},
+	options ...SharedInformerOption) SharedInformerFactory {
 	factory := &sharedInformerFactory{
 		client:           client,
         namespaces:       {{.xnsNewNamespaceSet|raw}}(v1.NamespaceAll),

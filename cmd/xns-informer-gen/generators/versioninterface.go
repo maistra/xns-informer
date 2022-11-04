@@ -19,11 +19,10 @@ package generators
 import (
 	"io"
 
+	"k8s.io/code-generator/cmd/client-gen/generators/util"
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
-
-	"k8s.io/code-generator/cmd/client-gen/generators/util"
 )
 
 // versionInterfaceGenerator generates the per-version interface file.

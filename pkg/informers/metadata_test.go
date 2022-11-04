@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -12,8 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/client-go/metadata/fake"
 	"k8s.io/client-go/tools/cache"
-
-	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 )
 
 // This is directly adapted from the upstream tests for metadata informers.
@@ -32,15 +31,17 @@ func TestMetadataSharedInformerFactory(t *testing.T) {
 		existingObj *metav1.PartialObjectMetadata
 		gvr         schema.GroupVersionResource
 		ns          string
-		trigger     func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeMetadataClient, testObject *metav1.PartialObjectMetadata) *metav1.PartialObjectMetadata
-		handler     func(rcvCh chan<- *metav1.PartialObjectMetadata) *cache.ResourceEventHandlerFuncs
+		trigger     func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeMetadataClient,
+			testObject *metav1.PartialObjectMetadata) *metav1.PartialObjectMetadata
+		handler func(rcvCh chan<- *metav1.PartialObjectMetadata) *cache.ResourceEventHandlerFuncs
 	}{
 		// scenario 1
 		{
 			name: "scenario 1: test if adding an object triggers AddFunc",
 			ns:   "ns-foo",
 			gvr:  schema.GroupVersionResource{Group: "extensions", Version: "v1beta1", Resource: "deployments"},
-			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeMetadataClient, _ *metav1.PartialObjectMetadata) *metav1.PartialObjectMetadata {
+			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeMetadataClient, _ *metav1.PartialObjectMetadata,
+			) *metav1.PartialObjectMetadata {
 				testObject := newPartialObjectMetadata("extensions/v1beta1", "Deployment", "ns-foo", "name-foo")
 				createdObj, err := fakeClient.Resource(gvr).Namespace(ns).(fake.MetadataClient).CreateFake(testObject, metav1.CreateOptions{})
 				if err != nil {
@@ -63,7 +64,9 @@ func TestMetadataSharedInformerFactory(t *testing.T) {
 			ns:          "ns-foo",
 			gvr:         schema.GroupVersionResource{Group: "extensions", Version: "v1beta1", Resource: "deployments"},
 			existingObj: newPartialObjectMetadata("extensions/v1beta1", "Deployment", "ns-foo", "name-foo"),
-			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeMetadataClient, testObject *metav1.PartialObjectMetadata) *metav1.PartialObjectMetadata {
+			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeMetadataClient,
+				testObject *metav1.PartialObjectMetadata,
+			) *metav1.PartialObjectMetadata {
 				if testObject.Annotations == nil {
 					testObject.Annotations = make(map[string]string)
 				}
@@ -89,7 +92,9 @@ func TestMetadataSharedInformerFactory(t *testing.T) {
 			ns:          "ns-foo",
 			gvr:         schema.GroupVersionResource{Group: "extensions", Version: "v1beta1", Resource: "deployments"},
 			existingObj: newPartialObjectMetadata("extensions/v1beta1", "Deployment", "ns-foo", "name-foo"),
-			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeMetadataClient, testObject *metav1.PartialObjectMetadata) *metav1.PartialObjectMetadata {
+			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeMetadataClient,
+				testObject *metav1.PartialObjectMetadata,
+			) *metav1.PartialObjectMetadata {
 				err := fakeClient.Resource(gvr).Namespace(ns).Delete(context.TODO(), testObject.GetName(), metav1.DeleteOptions{})
 				if err != nil {
 					t.Error(err)
@@ -109,7 +114,7 @@ func TestMetadataSharedInformerFactory(t *testing.T) {
 	for _, ts := range scenarios {
 		t.Run(ts.name, func(t *testing.T) {
 			// test data
-			timeout := time.Duration(3 * time.Second)
+			timeout := 3 * time.Second
 			ctx, cancel := context.WithTimeout(context.Background(), timeout)
 			defer cancel()
 			scheme := runtime.NewScheme()

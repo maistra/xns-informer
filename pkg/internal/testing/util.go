@@ -94,7 +94,7 @@ func NewMultiIndexer(objects ObjectMap) *SimpleMultiIndexer {
 		)
 
 		for _, obj := range objects[namespace] {
-			idx.Add(obj)
+			_ = idx.Add(obj)
 		}
 
 		indexers[namespace] = idx
