@@ -49,14 +49,16 @@ type statefulSetInformer struct {
 // NewStatefulSetInformer constructs a new informer for StatefulSet type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewStatefulSetInformer(client kubernetes.Interface, namespaces informers.NamespaceSet, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+func NewStatefulSetInformer(client kubernetes.Interface, namespaces informers.NamespaceSet,
+	resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewFilteredStatefulSetInformer(client, namespaces, resyncPeriod, indexers, nil)
 }
 
 // NewFilteredStatefulSetInformer constructs a new informer for StatefulSet type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredStatefulSetInformer(client kubernetes.Interface, namespaces informers.NamespaceSet, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredStatefulSetInformer(client kubernetes.Interface, namespaces informers.NamespaceSet,
+	resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	newInformer := func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
 			&cache.ListWatch{
@@ -83,7 +85,8 @@ func NewFilteredStatefulSetInformer(client kubernetes.Interface, namespaces info
 }
 
 func (f *statefulSetInformer) defaultInformer(client kubernetes.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredStatefulSetInformer(client, f.namespaces, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+	return NewFilteredStatefulSetInformer(client, f.namespaces, resyncPeriod,
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *statefulSetInformer) Informer() cache.SharedIndexInformer {

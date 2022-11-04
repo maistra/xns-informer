@@ -49,14 +49,16 @@ type daemonSetInformer struct {
 // NewDaemonSetInformer constructs a new informer for DaemonSet type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewDaemonSetInformer(client kubernetes.Interface, namespaces informers.NamespaceSet, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+func NewDaemonSetInformer(client kubernetes.Interface, namespaces informers.NamespaceSet,
+	resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewFilteredDaemonSetInformer(client, namespaces, resyncPeriod, indexers, nil)
 }
 
 // NewFilteredDaemonSetInformer constructs a new informer for DaemonSet type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredDaemonSetInformer(client kubernetes.Interface, namespaces informers.NamespaceSet, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredDaemonSetInformer(client kubernetes.Interface, namespaces informers.NamespaceSet,
+	resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	newInformer := func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
 			&cache.ListWatch{
@@ -83,7 +85,8 @@ func NewFilteredDaemonSetInformer(client kubernetes.Interface, namespaces inform
 }
 
 func (f *daemonSetInformer) defaultInformer(client kubernetes.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredDaemonSetInformer(client, f.namespaces, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+	return NewFilteredDaemonSetInformer(client, f.namespaces, resyncPeriod,
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *daemonSetInformer) Informer() cache.SharedIndexInformer {
