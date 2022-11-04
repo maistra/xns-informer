@@ -21,13 +21,11 @@ import (
 	"io"
 	"strings"
 
+	"k8s.io/code-generator/cmd/client-gen/generators/util"
+	clientgentypes "k8s.io/code-generator/cmd/client-gen/types"
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
-
-	"k8s.io/code-generator/cmd/client-gen/generators/util"
-	clientgentypes "k8s.io/code-generator/cmd/client-gen/types"
-
 	"k8s.io/klog/v2"
 )
 
@@ -137,7 +135,8 @@ var typeInformerPublicConstructor = `
 // New$.type|public$Informer constructs a new informer for $.type|public$ type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func New$.type|public$Informer(client $.clientSetInterface|raw$$if .namespaced$, namespaces $.xnsNamespaceSet|raw$$end$, resyncPeriod $.timeDuration|raw$, indexers $.cacheIndexers|raw$) $.cacheSharedIndexInformer|raw$ {
+func New$.type|public$Informer(client $.clientSetInterface|raw$$if .namespaced$, namespaces $.xnsNamespaceSet|raw$$end$,
+    resyncPeriod $.timeDuration|raw$, indexers $.cacheIndexers|raw$) $.cacheSharedIndexInformer|raw$ {
 	return NewFiltered$.type|public$Informer(client$if .namespaced$, namespaces$end$, resyncPeriod, indexers, nil)
 }
 `
@@ -146,7 +145,8 @@ var typeFilteredInformerPublicConstructor = `
 // NewFiltered$.type|public$Informer constructs a new informer for $.type|public$ type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFiltered$.type|public$Informer(client $.clientSetInterface|raw$$if .namespaced$, namespaces $.xnsNamespaceSet|raw$$end$, resyncPeriod $.timeDuration|raw$, indexers $.cacheIndexers|raw$, tweakListOptions $.interfacesTweakListOptionsFunc|raw$) $.cacheSharedIndexInformer|raw$ {
+func NewFiltered$.type|public$Informer(client $.clientSetInterface|raw$$if .namespaced$, namespaces $.xnsNamespaceSet|raw$$end$,
+	resyncPeriod $.timeDuration|raw$, indexers $.cacheIndexers|raw$, tweakListOptions $.interfacesTweakListOptionsFunc|raw$) $.cacheSharedIndexInformer|raw$ {
     $- if .namespaced$newInformer := func(namespace string) $.cacheSharedIndexInformer|raw$ {$end$
         return $.cacheNewSharedIndexInformer|raw$(
    		    &$.cacheListWatch|raw${
@@ -177,7 +177,8 @@ $- end$
 
 var typeInformerConstructor = `
 func (f *$.type|private$Informer) defaultInformer(client $.clientSetInterface|raw$, resyncPeriod $.timeDuration|raw$) $.cacheSharedIndexInformer|raw$ {
-	return NewFiltered$.type|public$Informer(client$if .namespaced$, f.namespaces$end$, resyncPeriod, $.cacheIndexers|raw${$.cacheNamespaceIndex|raw$: $.cacheMetaNamespaceIndexFunc|raw$}, f.tweakListOptions)
+	return NewFiltered$.type|public$Informer(client$if .namespaced$, f.namespaces$end$, resyncPeriod,
+		$.cacheIndexers|raw${$.cacheNamespaceIndex|raw$: $.cacheMetaNamespaceIndexFunc|raw$}, f.tweakListOptions)
 }
 `
 

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 	appsv1 "k8s.io/api/apps/v1"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -15,17 +16,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/tools/cache"
-
-	xnsinformers "github.com/maistra/xns-informer/pkg/informers"
 )
 
 // This is directly adapted from the upstream tests for dynamic informers.
 
-type triggerFunc func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeDynamicClient, testObject *unstructured.Unstructured) *unstructured.Unstructured
+type triggerFunc func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeDynamicClient,
+	testObject *unstructured.Unstructured) *unstructured.Unstructured
 
 func triggerFactory(t *testing.T) triggerFunc {
 	return func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeDynamicClient, _ *unstructured.Unstructured) *unstructured.Unstructured {
-		testObject := newUnstructured("apps/v1", "Deployment", "ns-foo", "name-foo")
+		testObject := newUnstructured("apps/v1")
 		createdObj, err := fakeClient.Resource(gvr).Namespace(ns).Create(context.TODO(), testObject, metav1.CreateOptions{})
 		if err != nil {
 			t.Error(err)
@@ -49,7 +49,7 @@ func TestFilteredDynamicSharedInformerFactory(t *testing.T) {
 		gvr         schema.GroupVersionResource
 		informNS    xnsinformers.NamespaceSet
 		ns          string
-		trigger     func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeDynamicClient, testObject *unstructured.Unstructured) *unstructured.Unstructured
+		trigger     triggerFunc
 		handler     func(rcvCh chan<- *unstructured.Unstructured) *cache.ResourceEventHandlerFuncs
 	}{
 		// scenario 1
@@ -115,7 +115,6 @@ func TestFilteredDynamicSharedInformerFactory(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestDynamicSharedInformerFactory(t *testing.T) {
@@ -124,8 +123,9 @@ func TestDynamicSharedInformerFactory(t *testing.T) {
 		existingObj *unstructured.Unstructured
 		gvr         schema.GroupVersionResource
 		ns          string
-		trigger     func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeDynamicClient, testObject *unstructured.Unstructured) *unstructured.Unstructured
-		handler     func(rcvCh chan<- *unstructured.Unstructured) *cache.ResourceEventHandlerFuncs
+		trigger     func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeDynamicClient,
+			testObject *unstructured.Unstructured) *unstructured.Unstructured
+		handler func(rcvCh chan<- *unstructured.Unstructured) *cache.ResourceEventHandlerFuncs
 	}{
 		// scenario 1
 		{
@@ -133,7 +133,7 @@ func TestDynamicSharedInformerFactory(t *testing.T) {
 			ns:   "ns-foo",
 			gvr:  schema.GroupVersionResource{Group: "extensions", Version: "v1beta1", Resource: "deployments"},
 			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeDynamicClient, _ *unstructured.Unstructured) *unstructured.Unstructured {
-				testObject := newUnstructured("extensions/v1beta1", "Deployment", "ns-foo", "name-foo")
+				testObject := newUnstructured("extensions/v1beta1")
 				createdObj, err := fakeClient.Resource(gvr).Namespace(ns).Create(context.TODO(), testObject, metav1.CreateOptions{})
 				if err != nil {
 					t.Error(err)
@@ -154,8 +154,10 @@ func TestDynamicSharedInformerFactory(t *testing.T) {
 			name:        "scenario 2: tests if updating an object triggers UpdateFunc",
 			ns:          "ns-foo",
 			gvr:         schema.GroupVersionResource{Group: "extensions", Version: "v1beta1", Resource: "deployments"},
-			existingObj: newUnstructured("extensions/v1beta1", "Deployment", "ns-foo", "name-foo"),
-			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeDynamicClient, testObject *unstructured.Unstructured) *unstructured.Unstructured {
+			existingObj: newUnstructured("extensions/v1beta1"),
+			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeDynamicClient,
+				testObject *unstructured.Unstructured,
+			) *unstructured.Unstructured {
 				testObject.Object["spec"] = "updatedName"
 				updatedObj, err := fakeClient.Resource(gvr).Namespace(ns).Update(context.TODO(), testObject, metav1.UpdateOptions{})
 				if err != nil {
@@ -177,8 +179,10 @@ func TestDynamicSharedInformerFactory(t *testing.T) {
 			name:        "scenario 3: test if deleting an object triggers DeleteFunc",
 			ns:          "ns-foo",
 			gvr:         schema.GroupVersionResource{Group: "extensions", Version: "v1beta1", Resource: "deployments"},
-			existingObj: newUnstructured("extensions/v1beta1", "Deployment", "ns-foo", "name-foo"),
-			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeDynamicClient, testObject *unstructured.Unstructured) *unstructured.Unstructured {
+			existingObj: newUnstructured("extensions/v1beta1"),
+			trigger: func(gvr schema.GroupVersionResource, ns string, fakeClient *fake.FakeDynamicClient,
+				testObject *unstructured.Unstructured,
+			) *unstructured.Unstructured {
 				err := fakeClient.Resource(gvr).Namespace(ns).Delete(context.TODO(), testObject.GetName(), metav1.DeleteOptions{})
 				if err != nil {
 					t.Error(err)
@@ -235,16 +239,16 @@ func TestDynamicSharedInformerFactory(t *testing.T) {
 	}
 }
 
-func newUnstructured(apiVersion, kind, namespace, name string) *unstructured.Unstructured {
+func newUnstructured(apiVersion string) *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": apiVersion,
-			"kind":       kind,
+			"kind":       "Deployment",
 			"metadata": map[string]interface{}{
-				"namespace": namespace,
-				"name":      name,
+				"namespace": "ns-foo",
+				"name":      "name-foo",
 			},
-			"spec": name,
+			"spec": "name-foo",
 		},
 	}
 }

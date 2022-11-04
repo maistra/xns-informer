@@ -30,8 +30,12 @@ check-clean-repo:
 lint-scripts:
 	@${FINDFILES} -name '*.sh' -print0 | ${XARGS} shellcheck
 
+.PHONY: lint-go
+lint-go:
+	${FINDFILES} -name '*.go' \( ! \( -name '*.gen.go' -o -name '*.pb.go' -o -name 'zz_generated.*.go' \) \) -print0 | ${XARGS} ./hack/lint_go.sh
+
 .PHONY: lint
-lint: lint-scripts
+lint: lint-scripts lint-go
 
 .DEFAULT_GOAL:=all
 .PHONY: all

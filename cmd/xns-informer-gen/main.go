@@ -20,13 +20,12 @@ import (
 	"flag"
 	"path/filepath"
 
+	generatorargs "github.com/maistra/xns-informer/cmd/xns-informer-gen/args"
+	"github.com/maistra/xns-informer/cmd/xns-informer-gen/generators"
 	"github.com/spf13/pflag"
 	"k8s.io/code-generator/pkg/util"
 	"k8s.io/gengo/args"
 	"k8s.io/klog/v2"
-
-	generatorargs "github.com/maistra/xns-informer/cmd/xns-informer-gen/args"
-	"github.com/maistra/xns-informer/cmd/xns-informer-gen/generators"
 )
 
 func main() {
@@ -43,7 +42,9 @@ func main() {
 
 	genericArgs.AddFlags(pflag.CommandLine)
 	customArgs.AddFlags(pflag.CommandLine)
-	flag.Set("logtostderr", "true")
+	if err := flag.Set("logtostderr", "true"); err != nil {
+		klog.Fatalf("Error: %v", err)
+	}
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 

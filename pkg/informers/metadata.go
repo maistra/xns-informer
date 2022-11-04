@@ -31,7 +31,9 @@ func NewMetadataSharedInformerFactory(client metadata.Interface, defaultResync t
 
 // NewFilteredMetadataSharedInformerFactory constructs a new instance of metadataSharedInformerFactory.
 // Listers obtained via this factory will be subject to the same filters as specified here.
-func NewFilteredMetadataSharedInformerFactory(client metadata.Interface, defaultResync time.Duration, namespaces NamespaceSet, tweakListOptions TweakListOptionsFunc) MetadataSharedInformerFactory {
+func NewFilteredMetadataSharedInformerFactory(client metadata.Interface, defaultResync time.Duration, namespaces NamespaceSet,
+	tweakListOptions TweakListOptionsFunc,
+) MetadataSharedInformerFactory {
 	return &metadataSharedInformerFactory{
 		client:           client,
 		defaultResync:    defaultResync,
@@ -67,7 +69,8 @@ func (f *metadataSharedInformerFactory) ForResource(gvr schema.GroupVersionResou
 		return informer
 	}
 
-	informer = NewFilteredMetadataInformer(f.client, gvr, f.namespaces, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+	informer = NewFilteredMetadataInformer(f.client, gvr, f.namespaces, f.defaultResync,
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 	f.informers[key] = informer
 
 	return informer
@@ -117,7 +120,9 @@ func (f *metadataSharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{})
 }
 
 // NewFilteredMetadataInformer constructs a new informer for a metadata type.
-func NewFilteredMetadataInformer(client metadata.Interface, gvr schema.GroupVersionResource, namespaces NamespaceSet, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions TweakListOptionsFunc) informers.GenericInformer {
+func NewFilteredMetadataInformer(client metadata.Interface, gvr schema.GroupVersionResource, namespaces NamespaceSet, resyncPeriod time.Duration,
+	indexers cache.Indexers, tweakListOptions TweakListOptionsFunc,
+) informers.GenericInformer {
 	newInformer := func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
 			&cache.ListWatch{
