@@ -60,6 +60,10 @@ k8s_group_versions=(
   k8s.io/api/storage/v1beta1
 )
 
+openshift_group_versions=(
+  github.com/openshift/api/route/v1
+)
+
 istio_group_versions=(
   istio.io/client-go/pkg/apis/extensions/v1alpha1
   istio.io/client-go/pkg/apis/networking/v1alpha3
@@ -80,6 +84,15 @@ gateway_api_group_versions=(
   --input-dirs "$(join_by , "${k8s_group_versions[@]}")" \
   --versioned-clientset-package "k8s.io/client-go/kubernetes" \
   --listers-package "k8s.io/client-go/listers" \
+  --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
+
+"${PROJ_ROOT}/out/xns-informer-gen" \
+  --output-base "${PROJ_ROOT}/out" \
+  --output-package "github.com/maistra/xns-informer/pkg/generated/openshift/route" \
+  --single-directory \
+  --input-dirs "$(join_by , "${openshift_group_versions[@]}")" \
+  --versioned-clientset-package "github.com/openshift/client-go/route/clientset/versioned" \
+  --listers-package "github.com/openshift/client-go/route/listers" \
   --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
 
 "${PROJ_ROOT}/out/xns-informer-gen" \

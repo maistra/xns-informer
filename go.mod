@@ -3,6 +3,8 @@ module github.com/maistra/xns-informer
 go 1.19
 
 require (
+	github.com/openshift/api v0.0.0-20200929171550-c99a4deebbe5
+	github.com/openshift/client-go v0.0.0-20200929181438-91d71ef2122c
 	github.com/spf13/pflag v1.0.5
 	istio.io/client-go v1.16.0-beta.2.0.20221102013820-4276379da487
 	k8s.io/api v0.25.1
