@@ -135,10 +135,13 @@ func (i *multiNamespaceInformer) AddNamespace(namespace string) {
 
 	// Add event handlers to the new informer.
 	for _, handler := range i.eventHandlers {
-		informer.AddEventHandlerWithResyncPeriod(
+		_, err := informer.AddEventHandlerWithResyncPeriod(
 			handler.handler,
 			handler.resyncPeriod,
 		)
+		if err != nil {
+			klog.Errorf("Failed to add event handler for namespace %q: %v", namespace, err)
+		}
 	}
 
 	// Add watch error handler.
@@ -216,14 +219,14 @@ func (i *multiNamespaceInformer) Run(stopCh <-chan struct{}) {
 }
 
 // AddEventHandler adds the given handler to each namespaced informer.
-func (i *multiNamespaceInformer) AddEventHandler(handler cache.ResourceEventHandler) {
-	i.AddEventHandlerWithResyncPeriod(handler, i.resyncPeriod)
+func (i *multiNamespaceInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	return i.AddEventHandlerWithResyncPeriod(handler, i.resyncPeriod)
 }
 
 // AddEventHandlerWithResyncPeriod adds the given handler with a resync period
 // to each namespaced informer.  The handler will also be added to any informers
 // created later as namespaces are added.
-func (i *multiNamespaceInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) {
+func (i *multiNamespaceInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
@@ -233,8 +236,12 @@ func (i *multiNamespaceInformer) AddEventHandlerWithResyncPeriod(handler cache.R
 	})
 
 	for _, informer := range i.informers {
-		informer.AddEventHandlerWithResyncPeriod(handler, resyncPeriod)
+		_, err := informer.AddEventHandlerWithResyncPeriod(handler, resyncPeriod)
+		if err != nil {
+			return nil, err
+		}
 	}
+	return i, nil
 }
 
 // AddIndexers adds the given indexers to each namespaced informer.
@@ -292,4 +299,28 @@ func (i *multiNamespaceInformer) SetTransform(handler cache.TransformFunc) error
 		errList = append(errList, informer.SetTransform(handler))
 	}
 	return errors.NewAggregate(errList)
+}
+
+func (i *multiNamespaceInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	for _, inf := range i.informers {
+		if err := inf.RemoveEventHandler(handle); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (i *multiNamespaceInformer) IsStopped() bool {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	for _, inf := range i.informers {
+		if isStopped := inf.IsStopped(); !isStopped {
+			return false
+		}
+	}
+	return true
 }

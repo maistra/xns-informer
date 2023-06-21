@@ -42,7 +42,7 @@ func newTestListener(name string, resyncPeriod time.Duration, expected ...string
 	return l
 }
 
-func (l *testListener) OnAdd(obj interface{}) {
+func (l *testListener) OnAdd(obj interface{}, _ bool) {
 	l.handle(obj)
 }
 
@@ -371,12 +371,14 @@ type mockInformer struct {
 	hasSynced *bool
 }
 
-func (m mockInformer) AddEventHandler(handler cache.ResourceEventHandler) {
-	panic("not implemented")
+func (m mockInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (m mockInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) {
-	panic("not implemented")
+func (m mockInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (m mockInformer) GetStore() cache.Store {
@@ -413,4 +415,14 @@ func (m mockInformer) GetIndexer() cache.Indexer {
 
 func (m mockInformer) SetTransform(handler cache.TransformFunc) error {
 	panic("not implemented")
+}
+
+func (m mockInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m mockInformer) IsStopped() bool {
+	//TODO implement me
+	panic("implement me")
 }
