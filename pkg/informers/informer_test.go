@@ -28,7 +28,7 @@ import (
 type testListener struct {
 	lock              sync.RWMutex
 	resyncPeriod      time.Duration
-	expectedItemNames sets.String
+	expectedItemNames sets.Set[string]
 	receivedItemNames []string
 	name              string
 }
@@ -36,7 +36,7 @@ type testListener struct {
 func newTestListener(name string, resyncPeriod time.Duration, expected ...string) *testListener {
 	l := &testListener{
 		resyncPeriod:      resyncPeriod,
-		expectedItemNames: sets.NewString(expected...),
+		expectedItemNames: sets.New[string](expected...),
 		name:              name,
 	}
 	return l
@@ -86,7 +86,7 @@ func (l *testListener) satisfiedExpectations() bool {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
 
-	return sets.NewString(l.receivedItemNames...).Equal(l.expectedItemNames)
+	return sets.New[string](l.receivedItemNames...).Equal(l.expectedItemNames)
 }
 
 // create a new NewMultiNamespaceInformer with the given example object and map
@@ -173,8 +173,8 @@ func TestSharedInformerWatchDisruption(t *testing.T) {
 		listener.lock.Unlock()
 	}
 
-	listenerNoResync.expectedItemNames = sets.NewString("pod2", "pod3")
-	listenerResync.expectedItemNames = sets.NewString("pod1", "pod2", "pod3")
+	listenerNoResync.expectedItemNames = sets.New[string]("pod2", "pod3")
+	listenerResync.expectedItemNames = sets.New[string]("pod1", "pod2", "pod3")
 
 	// This calls shouldSync, which deletes noResync from the list of syncingListeners
 	time.Sleep(1 * time.Second)
