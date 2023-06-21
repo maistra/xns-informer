@@ -65,12 +65,13 @@ func (l *testListener) handle(obj interface{}) {
 
 func (l *testListener) ok() bool {
 	fmt.Println("polling")
-	err := wait.PollImmediate(100*time.Millisecond, 2*time.Second, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), 100*time.Millisecond, 2*time.Second, true, func(ctx context.Context) (done bool, err error) {
 		if l.satisfiedExpectations() {
 			return true, nil
 		}
 		return false, nil
 	})
+
 	if err != nil {
 		return false
 	}
@@ -316,7 +317,7 @@ func TestMultiNamespaceInformerEventHandlers(t *testing.T) {
 	}
 
 	// Wait for all handler functions to be called.
-	err = wait.PollImmediate(100*time.Millisecond, 1*time.Minute, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), 100*time.Millisecond, 1*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		lock.RLock()
 		defer lock.RUnlock()
 		return addFuncCalled && updateFuncCalled && deleteFuncCalled, nil
@@ -331,7 +332,7 @@ func TestMultiNamespaceInformerEventHandlers(t *testing.T) {
 	informer.RemoveNamespace(namespaces[0])
 
 	// Wait for delete handler function to be called again.
-	err = wait.PollImmediate(100*time.Millisecond, 1*time.Minute, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), 100*time.Millisecond, 1*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		return deleteFuncCalled, nil
 	})
 
