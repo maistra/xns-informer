@@ -219,14 +219,18 @@ func (i *multiNamespaceInformer) Run(stopCh <-chan struct{}) {
 }
 
 // AddEventHandler adds the given handler to each namespaced informer.
-func (i *multiNamespaceInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+func (i *multiNamespaceInformer) AddEventHandler(
+	handler cache.ResourceEventHandler,
+) (cache.ResourceEventHandlerRegistration, error) {
 	return i.AddEventHandlerWithResyncPeriod(handler, i.resyncPeriod)
 }
 
 // AddEventHandlerWithResyncPeriod adds the given handler with a resync period
 // to each namespaced informer.  The handler will also be added to any informers
 // created later as namespaces are added.
-func (i *multiNamespaceInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
+func (i *multiNamespaceInformer) AddEventHandlerWithResyncPeriod(
+	handler cache.ResourceEventHandler, resyncPeriod time.Duration,
+) (cache.ResourceEventHandlerRegistration, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
