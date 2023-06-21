@@ -71,7 +71,6 @@ func (l *testListener) ok() bool {
 		}
 		return false, nil
 	})
-
 	if err != nil {
 		return false
 	}
@@ -373,12 +372,12 @@ type mockInformer struct {
 }
 
 func (m mockInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m mockInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) (cache.ResourceEventHandlerRegistration, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
@@ -419,11 +418,11 @@ func (m mockInformer) SetTransform(handler cache.TransformFunc) error {
 }
 
 func (m mockInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 
 func (m mockInformer) IsStopped() bool {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
