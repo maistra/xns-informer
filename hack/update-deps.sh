@@ -78,7 +78,6 @@ while test $# -gt 0; do
             ;;
     *)
             die "$(basename "$0"): unknown flag $(echo "$1" | cut -d'=' -f 1)"
-            exit 1
             ;;
   esac
 done
