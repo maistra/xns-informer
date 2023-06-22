@@ -45,6 +45,7 @@ type multiNamespaceInformer struct {
 	resyncPeriod  time.Duration
 	lock          sync.Mutex
 	started       bool
+	stopped       bool
 	namespaces    NamespaceSet
 	newInformer   NewInformerFunc
 }
@@ -216,6 +217,7 @@ func (i *multiNamespaceInformer) Run(stopCh <-chan struct{}) {
 	}
 
 	i.started = false
+	i.stopped = true
 }
 
 // AddEventHandler adds the given handler to each namespaced informer.
@@ -321,14 +323,5 @@ func (i *multiNamespaceInformer) IsStopped() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	if !i.namespaces.Initialized() || len(i.informers) == 0 {
-		return false
-	}
-
-	for _, inf := range i.informers {
-		if isStopped := inf.IsStopped(); !isStopped {
-			return false
-		}
-	}
-	return true
+	return i.stopped
 }
