@@ -28,7 +28,7 @@ import (
 type testListener struct {
 	lock              sync.RWMutex
 	resyncPeriod      time.Duration
-	expectedItemNames sets.String
+	expectedItemNames sets.Set[string]
 	receivedItemNames []string
 	name              string
 }
@@ -36,13 +36,13 @@ type testListener struct {
 func newTestListener(name string, resyncPeriod time.Duration, expected ...string) *testListener {
 	l := &testListener{
 		resyncPeriod:      resyncPeriod,
-		expectedItemNames: sets.NewString(expected...),
+		expectedItemNames: sets.New[string](expected...),
 		name:              name,
 	}
 	return l
 }
 
-func (l *testListener) OnAdd(obj interface{}) {
+func (l *testListener) OnAdd(obj interface{}, _ bool) {
 	l.handle(obj)
 }
 
@@ -65,7 +65,7 @@ func (l *testListener) handle(obj interface{}) {
 
 func (l *testListener) ok() bool {
 	fmt.Println("polling")
-	err := wait.PollImmediate(100*time.Millisecond, 2*time.Second, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(context.TODO(), 100*time.Millisecond, 2*time.Second, true, func(ctx context.Context) (done bool, err error) {
 		if l.satisfiedExpectations() {
 			return true, nil
 		}
@@ -86,7 +86,7 @@ func (l *testListener) satisfiedExpectations() bool {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
 
-	return sets.NewString(l.receivedItemNames...).Equal(l.expectedItemNames)
+	return sets.New[string](l.receivedItemNames...).Equal(l.expectedItemNames)
 }
 
 // create a new NewMultiNamespaceInformer with the given example object and map
@@ -173,8 +173,8 @@ func TestSharedInformerWatchDisruption(t *testing.T) {
 		listener.lock.Unlock()
 	}
 
-	listenerNoResync.expectedItemNames = sets.NewString("pod2", "pod3")
-	listenerResync.expectedItemNames = sets.NewString("pod1", "pod2", "pod3")
+	listenerNoResync.expectedItemNames = sets.New[string]("pod2", "pod3")
+	listenerResync.expectedItemNames = sets.New[string]("pod1", "pod2", "pod3")
 
 	// This calls shouldSync, which deletes noResync from the list of syncingListeners
 	time.Sleep(1 * time.Second)
@@ -316,7 +316,7 @@ func TestMultiNamespaceInformerEventHandlers(t *testing.T) {
 	}
 
 	// Wait for all handler functions to be called.
-	err = wait.PollImmediate(100*time.Millisecond, 1*time.Minute, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), 100*time.Millisecond, 1*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		lock.RLock()
 		defer lock.RUnlock()
 		return addFuncCalled && updateFuncCalled && deleteFuncCalled, nil
@@ -331,7 +331,7 @@ func TestMultiNamespaceInformerEventHandlers(t *testing.T) {
 	informer.RemoveNamespace(namespaces[0])
 
 	// Wait for delete handler function to be called again.
-	err = wait.PollImmediate(100*time.Millisecond, 1*time.Minute, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(context.TODO(), 100*time.Millisecond, 1*time.Minute, true, func(ctx context.Context) (done bool, err error) {
 		return deleteFuncCalled, nil
 	})
 
@@ -371,12 +371,14 @@ type mockInformer struct {
 	hasSynced *bool
 }
 
-func (m mockInformer) AddEventHandler(handler cache.ResourceEventHandler) {
-	panic("not implemented")
+func (m mockInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	panic("implement me")
 }
 
-func (m mockInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, resyncPeriod time.Duration) {
-	panic("not implemented")
+func (m mockInformer) AddEventHandlerWithResyncPeriod(
+	handler cache.ResourceEventHandler, resyncPeriod time.Duration,
+) (cache.ResourceEventHandlerRegistration, error) {
+	panic("implement me")
 }
 
 func (m mockInformer) GetStore() cache.Store {
@@ -413,4 +415,12 @@ func (m mockInformer) GetIndexer() cache.Indexer {
 
 func (m mockInformer) SetTransform(handler cache.TransformFunc) error {
 	panic("not implemented")
+}
+
+func (m mockInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+	panic("implement me")
+}
+
+func (m mockInformer) IsStopped() bool {
+	panic("implement me")
 }
