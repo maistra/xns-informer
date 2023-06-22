@@ -321,6 +321,10 @@ func (i *multiNamespaceInformer) IsStopped() bool {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
+	if !i.namespaces.Initialized() || len(i.informers) == 0 {
+		return false
+	}
+
 	for _, inf := range i.informers {
 		if isStopped := inf.IsStopped(); !isStopped {
 			return false
