@@ -20,28 +20,9 @@ package v1alpha2
 
 import (
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	v1alpha2 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1alpha2"
 	internalinterfaces "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// GRPCRoutes returns a GRPCRouteInformer.
-	GRPCRoutes() GRPCRouteInformer
-	// Gateways returns a GatewayInformer.
-	Gateways() GatewayInformer
-	// GatewayClasses returns a GatewayClassInformer.
-	GatewayClasses() GatewayClassInformer
-	// HTTPRoutes returns a HTTPRouteInformer.
-	HTTPRoutes() HTTPRouteInformer
-	// ReferenceGrants returns a ReferenceGrantInformer.
-	ReferenceGrants() ReferenceGrantInformer
-	// TCPRoutes returns a TCPRouteInformer.
-	TCPRoutes() TCPRouteInformer
-	// TLSRoutes returns a TLSRouteInformer.
-	TLSRoutes() TLSRouteInformer
-	// UDPRoutes returns a UDPRouteInformer.
-	UDPRoutes() UDPRouteInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -50,7 +31,7 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1alpha2.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 

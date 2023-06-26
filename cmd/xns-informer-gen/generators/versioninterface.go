@@ -33,6 +33,7 @@ type versionInterfaceGenerator struct {
 	types                     []*types.Type
 	filtered                  bool
 	internalInterfacesPackage string
+	version                   string
 }
 
 var _ generator.Generator = &versionInterfaceGenerator{}
@@ -59,8 +60,10 @@ func (g *versionInterfaceGenerator) Imports(c *generator.Context) (imports []str
 func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
+	versionPackage := "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/" + g.version
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
+		"informersInterface":              c.Universe.Type(types.Name{Package: versionPackage, Name: "Interface"}),
 		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "TweakListOptionsFunc"}),
 		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "SharedInformerFactory"}),
 		"types":                           g.types,
@@ -81,14 +84,6 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 }
 
 var versionTemplate = `
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	$range .types -$
-		// $.|publicPlural$ returns a $.|public$Informer.
-		$.|publicPlural$() $.|public$Informer
-	$end$
-}
-
 type version struct {
 	factory $.interfacesSharedInformerFactory|raw$
     namespaces $.xnsNamespaceSet|raw$
@@ -96,7 +91,7 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f $.interfacesSharedInformerFactory|raw$, namespaces $.xnsNamespaceSet|raw$, tweakListOptions $.interfacesTweakListOptionsFunc|raw$) Interface {
+func New(f $.interfacesSharedInformerFactory|raw$, namespaces $.xnsNamespaceSet|raw$, tweakListOptions $.interfacesTweakListOptionsFunc|raw$) $.informersInterface|raw$ {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 `

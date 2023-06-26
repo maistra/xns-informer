@@ -331,6 +331,7 @@ func versionPackage(basePackage string, groupPkgName string, gv clientgentypes.G
 				imports:                   generator.NewImportTracker(),
 				types:                     typesToGenerate,
 				internalInterfacesPackage: packageForInternalInterfaces(basePackage),
+				version:                   gv.Version.String(),
 			})
 
 			for _, t := range typesToGenerate {
