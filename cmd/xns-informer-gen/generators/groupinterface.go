@@ -71,10 +71,10 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 	for _, version := range g.groupVersions.Versions {
 		gv := clientgentypes.GroupVersion{Group: g.groupVersions.Group, Version: version.Version}
 		versionPackage := filepath.Join(g.outputPackage, strings.ToLower(gv.Version.NonEmpty()))
-		iface := c.Universe.Type(types.Name{Package: versionPackage, Name: "Interface"})
+		upstreamVersionPackage := filepath.Join("sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis", strings.ToLower(gv.Version.NonEmpty()))
 		versions = append(versions, versionData{
 			Name:      namer.IC(version.Version.NonEmpty()),
-			Interface: iface,
+			Interface: c.Universe.Type(types.Name{Package: upstreamVersionPackage, Name: "Interface"}),
 			New:       c.Universe.Function(types.Name{Package: versionPackage, Name: "New"}),
 		})
 	}
