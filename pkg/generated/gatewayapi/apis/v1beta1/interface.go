@@ -19,8 +19,8 @@ limitations under the License.
 package v1beta1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/gatewayapi/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.
