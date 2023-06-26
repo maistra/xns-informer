@@ -23,7 +23,7 @@ import (
 	sync "sync"
 	time "time"
 
-	apis "github.com/maistra/xns-informer/pkg/generated/gatewayapi/apis"
+	gatewayapiapis "github.com/maistra/xns-informer/pkg/generated/gatewayapi/apis"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +31,7 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 	versioned "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	externalversions "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
+	apis "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis"
 	internalinterfaces "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces"
 )
 
@@ -252,5 +253,5 @@ type SharedInformerFactory interface {
 }
 
 func (f *sharedInformerFactory) Gateway() apis.Interface {
-	return apis.New(f, f.namespaces, f.tweakListOptions)
+	return gatewayapiapis.New(f, f.namespaces, f.tweakListOptions)
 }

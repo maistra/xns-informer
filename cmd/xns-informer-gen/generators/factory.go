@@ -70,7 +70,7 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 	gvInterfaces := make(map[string]*types.Type)
 	gvNewFuncs := make(map[string]*types.Type)
 	for groupPkgName := range g.groupVersions {
-		gvInterfaces[groupPkgName] = c.Universe.Type(types.Name{Package: path.Join(g.outputPackage, groupPkgName), Name: "Interface"})
+		gvInterfaces[groupPkgName] = c.Universe.Type(types.Name{Package: path.Join("sigs.k8s.io/gateway-api/pkg/client/informers/externalversions", groupPkgName), Name: "Interface"})
 		gvNewFuncs[groupPkgName] = c.Universe.Function(types.Name{Package: path.Join(g.outputPackage, groupPkgName), Name: "New"})
 	}
 	m := map[string]interface{}{
