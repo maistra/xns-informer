@@ -61,17 +61,11 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
 	versionPackage := "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/" + g.version
-	//var versionedTypes []*types.Type
-	//for _, t := range g.types {
-	//	fmt.Println(t.Name.Name)
-	//	versionedTypes = append(versionedTypes, c.Universe.Type(types.Name{Package: versionPackage, Name: t.Name.Name}))
-	//}
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
 		"informersInterface":              c.Universe.Type(types.Name{Package: versionPackage, Name: "Interface"}),
 		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "TweakListOptionsFunc"}),
 		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "SharedInformerFactory"}),
-		//"types":                           g.types,
 	}
 
 	sw.Do(versionTemplate, m)
