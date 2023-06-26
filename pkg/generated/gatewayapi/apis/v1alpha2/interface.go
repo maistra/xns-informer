@@ -36,41 +36,41 @@ func New(f internalinterfaces.SharedInformerFactory, namespaces informers.Namesp
 }
 
 // GRPCRoutes returns a GRPCRouteInformer.
-func (v *version) GRPCRoutes() GRPCRouteInformer {
+func (v *version) GRPCRoutes() v1alpha2.GRPCRouteInformer {
 	return &gRPCRouteInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // Gateways returns a GatewayInformer.
-func (v *version) Gateways() GatewayInformer {
+func (v *version) Gateways() v1alpha2.GatewayInformer {
 	return &gatewayInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // GatewayClasses returns a GatewayClassInformer.
-func (v *version) GatewayClasses() GatewayClassInformer {
+func (v *version) GatewayClasses() v1alpha2.GatewayClassInformer {
 	return &gatewayClassInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // HTTPRoutes returns a HTTPRouteInformer.
-func (v *version) HTTPRoutes() HTTPRouteInformer {
+func (v *version) HTTPRoutes() v1alpha2.HTTPRouteInformer {
 	return &hTTPRouteInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // ReferenceGrants returns a ReferenceGrantInformer.
-func (v *version) ReferenceGrants() ReferenceGrantInformer {
+func (v *version) ReferenceGrants() v1alpha2.ReferenceGrantInformer {
 	return &referenceGrantInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // TCPRoutes returns a TCPRouteInformer.
-func (v *version) TCPRoutes() TCPRouteInformer {
+func (v *version) TCPRoutes() v1alpha2.TCPRouteInformer {
 	return &tCPRouteInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // TLSRoutes returns a TLSRouteInformer.
-func (v *version) TLSRoutes() TLSRouteInformer {
+func (v *version) TLSRoutes() v1alpha2.TLSRouteInformer {
 	return &tLSRouteInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // UDPRoutes returns a UDPRouteInformer.
-func (v *version) UDPRoutes() UDPRouteInformer {
+func (v *version) UDPRoutes() v1alpha2.UDPRouteInformer {
 	return &uDPRouteInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }

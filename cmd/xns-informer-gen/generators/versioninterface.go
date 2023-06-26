@@ -61,12 +61,17 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
 	versionPackage := "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/" + g.version
+	//var versionedTypes []*types.Type
+	//for _, t := range g.types {
+	//	fmt.Println(t.Name.Name)
+	//	versionedTypes = append(versionedTypes, c.Universe.Type(types.Name{Package: versionPackage, Name: t.Name.Name}))
+	//}
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
 		"informersInterface":              c.Universe.Type(types.Name{Package: versionPackage, Name: "Interface"}),
 		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "TweakListOptionsFunc"}),
 		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "SharedInformerFactory"}),
-		"types":                           g.types,
+		//"types":                           g.types,
 	}
 
 	sw.Do(versionTemplate, m)
@@ -77,6 +82,7 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 		}
 		m["namespaced"] = !tags.NonNamespaced
 		m["type"] = typeDef
+		m["versionedType"] = c.Universe.Type(types.Name{Package: versionPackage, Name: typeDef.Name.Name})
 		sw.Do(versionFuncTemplate, m)
 	}
 
@@ -98,7 +104,7 @@ func New(f $.interfacesSharedInformerFactory|raw$, namespaces $.xnsNamespaceSet|
 
 var versionFuncTemplate = `
 // $.type|publicPlural$ returns a $.type|public$Informer.
-func (v *version) $.type|publicPlural$() $.type|public$Informer {
+func (v *version) $.type|publicPlural$() $.versionedType|raw$Informer {
 	return &$.type|private$Informer{factory: v.factory$if .namespaced$, namespaces: v.namespaces$end$, tweakListOptions: v.tweakListOptions}
 }
 `

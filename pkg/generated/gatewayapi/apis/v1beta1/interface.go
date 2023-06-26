@@ -36,21 +36,21 @@ func New(f internalinterfaces.SharedInformerFactory, namespaces informers.Namesp
 }
 
 // Gateways returns a GatewayInformer.
-func (v *version) Gateways() GatewayInformer {
+func (v *version) Gateways() v1beta1.GatewayInformer {
 	return &gatewayInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // GatewayClasses returns a GatewayClassInformer.
-func (v *version) GatewayClasses() GatewayClassInformer {
+func (v *version) GatewayClasses() v1beta1.GatewayClassInformer {
 	return &gatewayClassInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // HTTPRoutes returns a HTTPRouteInformer.
-func (v *version) HTTPRoutes() HTTPRouteInformer {
+func (v *version) HTTPRoutes() v1beta1.HTTPRouteInformer {
 	return &hTTPRouteInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // ReferenceGrants returns a ReferenceGrantInformer.
-func (v *version) ReferenceGrants() ReferenceGrantInformer {
+func (v *version) ReferenceGrants() v1beta1.ReferenceGrantInformer {
 	return &referenceGrantInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
