@@ -22,16 +22,9 @@ import (
 	v1alpha2 "github.com/maistra/xns-informer/pkg/generated/gatewayapi/apis/v1alpha2"
 	v1beta1 "github.com/maistra/xns-informer/pkg/generated/gatewayapi/apis/v1beta1"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	apis "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis"
 	internalinterfaces "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces"
 )
-
-// Interface provides access to each of this group's versions.
-type Interface interface {
-	// V1alpha2 provides access to shared informers for resources in V1alpha2.
-	V1alpha2() v1alpha2.Interface
-	// V1beta1 provides access to shared informers for resources in V1beta1.
-	V1beta1() v1beta1.Interface
-}
 
 type group struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -40,7 +33,7 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) apis.Interface {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 

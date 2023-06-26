@@ -80,6 +80,7 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 	}
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
+		"newInterface":                    c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis", Name: "Interface"}),
 		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "TweakListOptionsFunc"}),
 		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "SharedInformerFactory"}),
 		"versions":                        versions,
@@ -91,14 +92,6 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 }
 
 var groupTemplate = `
-// Interface provides access to each of this group's versions.
-type Interface interface {
-	$range .versions -$
-		// $.Name$ provides access to shared informers for resources in $.Name$.
-		$.Name$() $.Interface|raw$
-	$end$
-}
-
 type group struct {
 	factory $.interfacesSharedInformerFactory|raw$
     namespaces $.xnsNamespaceSet|raw$
@@ -106,7 +99,7 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f $.interfacesSharedInformerFactory|raw$, namespaces $.xnsNamespaceSet|raw$, tweakListOptions $.interfacesTweakListOptionsFunc|raw$) Interface {
+func New(f $.interfacesSharedInformerFactory|raw$, namespaces $.xnsNamespaceSet|raw$, tweakListOptions $.interfacesTweakListOptionsFunc|raw$) $.newInterface|raw$ {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
