@@ -19,9 +19,9 @@ limitations under the License.
 package apis
 
 import (
-	v1alpha2 "github.com/maistra/xns-informer/pkg/generated/gatewayapi/apis/v1alpha2"
-	v1beta1 "github.com/maistra/xns-informer/pkg/generated/gatewayapi/apis/v1beta1"
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/gatewayapi/internalinterfaces"
+	v1alpha2 "github.com/maistra/xns-informer/pkg/client/informers/externalversions/apis/v1alpha2"
+	v1beta1 "github.com/maistra/xns-informer/pkg/client/informers/externalversions/apis/v1beta1"
+	internalinterfaces "github.com/maistra/xns-informer/pkg/client/informers/externalversions/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 )
 

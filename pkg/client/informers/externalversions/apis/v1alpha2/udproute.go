@@ -22,7 +22,7 @@ import (
 	"context"
 	time "time"
 
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/gatewayapi/internalinterfaces"
+	internalinterfaces "github.com/maistra/xns-informer/pkg/client/informers/externalversions/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -33,31 +33,31 @@ import (
 	v1alpha2 "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha2"
 )
 
-// TLSRouteInformer provides access to a shared informer and lister for
-// TLSRoutes.
-type TLSRouteInformer interface {
+// UDPRouteInformer provides access to a shared informer and lister for
+// UDPRoutes.
+type UDPRouteInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha2.TLSRouteLister
+	Lister() v1alpha2.UDPRouteLister
 }
 
-type tLSRouteInformer struct {
+type uDPRouteInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespaces       informers.NamespaceSet
 }
 
-// NewTLSRouteInformer constructs a new informer for TLSRoute type.
+// NewUDPRouteInformer constructs a new informer for UDPRoute type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewTLSRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet,
+func NewUDPRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet,
 	resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredTLSRouteInformer(client, namespaces, resyncPeriod, indexers, nil)
+	return NewFilteredUDPRouteInformer(client, namespaces, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredTLSRouteInformer constructs a new informer for TLSRoute type.
+// NewFilteredUDPRouteInformer constructs a new informer for UDPRoute type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredTLSRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet,
+func NewFilteredUDPRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet,
 	resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	newInformer := func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
@@ -66,16 +66,16 @@ func NewFilteredTLSRouteInformer(client versioned.Interface, namespaces informer
 					if tweakListOptions != nil {
 						tweakListOptions(&options)
 					}
-					return client.GatewayV1alpha2().TLSRoutes(namespace).List(context.TODO(), options)
+					return client.GatewayV1alpha2().UDPRoutes(namespace).List(context.TODO(), options)
 				},
 				WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 					if tweakListOptions != nil {
 						tweakListOptions(&options)
 					}
-					return client.GatewayV1alpha2().TLSRoutes(namespace).Watch(context.TODO(), options)
+					return client.GatewayV1alpha2().UDPRoutes(namespace).Watch(context.TODO(), options)
 				},
 			},
-			&apisv1alpha2.TLSRoute{},
+			&apisv1alpha2.UDPRoute{},
 			resyncPeriod,
 			indexers,
 		)
@@ -84,15 +84,15 @@ func NewFilteredTLSRouteInformer(client versioned.Interface, namespaces informer
 	return informers.NewMultiNamespaceInformer(namespaces, resyncPeriod, newInformer)
 }
 
-func (f *tLSRouteInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredTLSRouteInformer(client, f.namespaces, resyncPeriod,
+func (f *uDPRouteInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredUDPRouteInformer(client, f.namespaces, resyncPeriod,
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *tLSRouteInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apisv1alpha2.TLSRoute{}, f.defaultInformer)
+func (f *uDPRouteInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&apisv1alpha2.UDPRoute{}, f.defaultInformer)
 }
 
-func (f *tLSRouteInformer) Lister() v1alpha2.TLSRouteLister {
-	return v1alpha2.NewTLSRouteLister(f.Informer().GetIndexer())
+func (f *uDPRouteInformer) Lister() v1alpha2.UDPRouteLister {
+	return v1alpha2.NewUDPRouteLister(f.Informer().GetIndexer())
 }

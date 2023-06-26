@@ -22,7 +22,7 @@ import (
 	"context"
 	time "time"
 
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/gatewayapi/internalinterfaces"
+	internalinterfaces "github.com/maistra/xns-informer/pkg/client/informers/externalversions/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -33,31 +33,31 @@ import (
 	v1alpha2 "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha2"
 )
 
-// HTTPRouteInformer provides access to a shared informer and lister for
-// HTTPRoutes.
-type HTTPRouteInformer interface {
+// TLSRouteInformer provides access to a shared informer and lister for
+// TLSRoutes.
+type TLSRouteInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha2.HTTPRouteLister
+	Lister() v1alpha2.TLSRouteLister
 }
 
-type hTTPRouteInformer struct {
+type tLSRouteInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespaces       informers.NamespaceSet
 }
 
-// NewHTTPRouteInformer constructs a new informer for HTTPRoute type.
+// NewTLSRouteInformer constructs a new informer for TLSRoute type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewHTTPRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet,
+func NewTLSRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet,
 	resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredHTTPRouteInformer(client, namespaces, resyncPeriod, indexers, nil)
+	return NewFilteredTLSRouteInformer(client, namespaces, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredHTTPRouteInformer constructs a new informer for HTTPRoute type.
+// NewFilteredTLSRouteInformer constructs a new informer for TLSRoute type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredHTTPRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet,
+func NewFilteredTLSRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet,
 	resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	newInformer := func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
@@ -66,16 +66,16 @@ func NewFilteredHTTPRouteInformer(client versioned.Interface, namespaces informe
 					if tweakListOptions != nil {
 						tweakListOptions(&options)
 					}
-					return client.GatewayV1alpha2().HTTPRoutes(namespace).List(context.TODO(), options)
+					return client.GatewayV1alpha2().TLSRoutes(namespace).List(context.TODO(), options)
 				},
 				WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 					if tweakListOptions != nil {
 						tweakListOptions(&options)
 					}
-					return client.GatewayV1alpha2().HTTPRoutes(namespace).Watch(context.TODO(), options)
+					return client.GatewayV1alpha2().TLSRoutes(namespace).Watch(context.TODO(), options)
 				},
 			},
-			&apisv1alpha2.HTTPRoute{},
+			&apisv1alpha2.TLSRoute{},
 			resyncPeriod,
 			indexers,
 		)
@@ -84,15 +84,15 @@ func NewFilteredHTTPRouteInformer(client versioned.Interface, namespaces informe
 	return informers.NewMultiNamespaceInformer(namespaces, resyncPeriod, newInformer)
 }
 
-func (f *hTTPRouteInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredHTTPRouteInformer(client, f.namespaces, resyncPeriod,
+func (f *tLSRouteInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredTLSRouteInformer(client, f.namespaces, resyncPeriod,
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *hTTPRouteInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apisv1alpha2.HTTPRoute{}, f.defaultInformer)
+func (f *tLSRouteInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&apisv1alpha2.TLSRoute{}, f.defaultInformer)
 }
 
-func (f *hTTPRouteInformer) Lister() v1alpha2.HTTPRouteLister {
-	return v1alpha2.NewHTTPRouteLister(f.Informer().GetIndexer())
+func (f *tLSRouteInformer) Lister() v1alpha2.TLSRouteLister {
+	return v1alpha2.NewTLSRouteLister(f.Informer().GetIndexer())
 }

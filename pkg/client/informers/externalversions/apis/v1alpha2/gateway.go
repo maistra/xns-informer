@@ -22,7 +22,7 @@ import (
 	"context"
 	time "time"
 
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/gatewayapi/internalinterfaces"
+	internalinterfaces "github.com/maistra/xns-informer/pkg/client/informers/externalversions/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -33,31 +33,31 @@ import (
 	v1alpha2 "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha2"
 )
 
-// TCPRouteInformer provides access to a shared informer and lister for
-// TCPRoutes.
-type TCPRouteInformer interface {
+// GatewayInformer provides access to a shared informer and lister for
+// Gateways.
+type GatewayInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha2.TCPRouteLister
+	Lister() v1alpha2.GatewayLister
 }
 
-type tCPRouteInformer struct {
+type gatewayInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespaces       informers.NamespaceSet
 }
 
-// NewTCPRouteInformer constructs a new informer for TCPRoute type.
+// NewGatewayInformer constructs a new informer for Gateway type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewTCPRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet,
+func NewGatewayInformer(client versioned.Interface, namespaces informers.NamespaceSet,
 	resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredTCPRouteInformer(client, namespaces, resyncPeriod, indexers, nil)
+	return NewFilteredGatewayInformer(client, namespaces, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredTCPRouteInformer constructs a new informer for TCPRoute type.
+// NewFilteredGatewayInformer constructs a new informer for Gateway type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredTCPRouteInformer(client versioned.Interface, namespaces informers.NamespaceSet,
+func NewFilteredGatewayInformer(client versioned.Interface, namespaces informers.NamespaceSet,
 	resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	newInformer := func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
@@ -66,16 +66,16 @@ func NewFilteredTCPRouteInformer(client versioned.Interface, namespaces informer
 					if tweakListOptions != nil {
 						tweakListOptions(&options)
 					}
-					return client.GatewayV1alpha2().TCPRoutes(namespace).List(context.TODO(), options)
+					return client.GatewayV1alpha2().Gateways(namespace).List(context.TODO(), options)
 				},
 				WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 					if tweakListOptions != nil {
 						tweakListOptions(&options)
 					}
-					return client.GatewayV1alpha2().TCPRoutes(namespace).Watch(context.TODO(), options)
+					return client.GatewayV1alpha2().Gateways(namespace).Watch(context.TODO(), options)
 				},
 			},
-			&apisv1alpha2.TCPRoute{},
+			&apisv1alpha2.Gateway{},
 			resyncPeriod,
 			indexers,
 		)
@@ -84,15 +84,15 @@ func NewFilteredTCPRouteInformer(client versioned.Interface, namespaces informer
 	return informers.NewMultiNamespaceInformer(namespaces, resyncPeriod, newInformer)
 }
 
-func (f *tCPRouteInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredTCPRouteInformer(client, f.namespaces, resyncPeriod,
+func (f *gatewayInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredGatewayInformer(client, f.namespaces, resyncPeriod,
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *tCPRouteInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apisv1alpha2.TCPRoute{}, f.defaultInformer)
+func (f *gatewayInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&apisv1alpha2.Gateway{}, f.defaultInformer)
 }
 
-func (f *tCPRouteInformer) Lister() v1alpha2.TCPRouteLister {
-	return v1alpha2.NewTCPRouteLister(f.Informer().GetIndexer())
+func (f *gatewayInformer) Lister() v1alpha2.GatewayLister {
+	return v1alpha2.NewGatewayLister(f.Informer().GetIndexer())
 }

@@ -22,7 +22,7 @@ import (
 	"context"
 	time "time"
 
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/gatewayapi/internalinterfaces"
+	internalinterfaces "github.com/maistra/xns-informer/pkg/client/informers/externalversions/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -33,31 +33,31 @@ import (
 	v1beta1 "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1beta1"
 )
 
-// ReferenceGrantInformer provides access to a shared informer and lister for
-// ReferenceGrants.
-type ReferenceGrantInformer interface {
+// GatewayInformer provides access to a shared informer and lister for
+// Gateways.
+type GatewayInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1beta1.ReferenceGrantLister
+	Lister() v1beta1.GatewayLister
 }
 
-type referenceGrantInformer struct {
+type gatewayInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespaces       informers.NamespaceSet
 }
 
-// NewReferenceGrantInformer constructs a new informer for ReferenceGrant type.
+// NewGatewayInformer constructs a new informer for Gateway type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewReferenceGrantInformer(client versioned.Interface, namespaces informers.NamespaceSet,
+func NewGatewayInformer(client versioned.Interface, namespaces informers.NamespaceSet,
 	resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredReferenceGrantInformer(client, namespaces, resyncPeriod, indexers, nil)
+	return NewFilteredGatewayInformer(client, namespaces, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredReferenceGrantInformer constructs a new informer for ReferenceGrant type.
+// NewFilteredGatewayInformer constructs a new informer for Gateway type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredReferenceGrantInformer(client versioned.Interface, namespaces informers.NamespaceSet,
+func NewFilteredGatewayInformer(client versioned.Interface, namespaces informers.NamespaceSet,
 	resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	newInformer := func(namespace string) cache.SharedIndexInformer {
 		return cache.NewSharedIndexInformer(
@@ -66,16 +66,16 @@ func NewFilteredReferenceGrantInformer(client versioned.Interface, namespaces in
 					if tweakListOptions != nil {
 						tweakListOptions(&options)
 					}
-					return client.GatewayV1beta1().ReferenceGrants(namespace).List(context.TODO(), options)
+					return client.GatewayV1beta1().Gateways(namespace).List(context.TODO(), options)
 				},
 				WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 					if tweakListOptions != nil {
 						tweakListOptions(&options)
 					}
-					return client.GatewayV1beta1().ReferenceGrants(namespace).Watch(context.TODO(), options)
+					return client.GatewayV1beta1().Gateways(namespace).Watch(context.TODO(), options)
 				},
 			},
-			&apisv1beta1.ReferenceGrant{},
+			&apisv1beta1.Gateway{},
 			resyncPeriod,
 			indexers,
 		)
@@ -84,15 +84,15 @@ func NewFilteredReferenceGrantInformer(client versioned.Interface, namespaces in
 	return informers.NewMultiNamespaceInformer(namespaces, resyncPeriod, newInformer)
 }
 
-func (f *referenceGrantInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredReferenceGrantInformer(client, f.namespaces, resyncPeriod,
+func (f *gatewayInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredGatewayInformer(client, f.namespaces, resyncPeriod,
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *referenceGrantInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apisv1beta1.ReferenceGrant{}, f.defaultInformer)
+func (f *gatewayInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&apisv1beta1.Gateway{}, f.defaultInformer)
 }
 
-func (f *referenceGrantInformer) Lister() v1beta1.ReferenceGrantLister {
-	return v1beta1.NewReferenceGrantLister(f.Informer().GetIndexer())
+func (f *gatewayInformer) Lister() v1beta1.GatewayLister {
+	return v1beta1.NewGatewayLister(f.Informer().GetIndexer())
 }

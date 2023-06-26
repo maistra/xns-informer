@@ -106,7 +106,7 @@ gateway_api_group_versions=(
 
 "${PROJ_ROOT}/out/xns-informer-gen" \
   --output-base "${PROJ_ROOT}/out" \
-  --output-package "github.com/maistra/xns-informer/pkg/generated/gatewayapi" \
+  --output-package "github.com/maistra/xns-informer/pkg/client/informers/externalversions" \
   --single-directory \
   --input-dirs "$(join_by , "${gateway_api_group_versions[@]}")" \
   --versioned-clientset-package "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned" \
@@ -115,5 +115,6 @@ gateway_api_group_versions=(
 
 rm -r "${PROJ_ROOT}/pkg/generated"
 mv "${PROJ_ROOT}/out/github.com/maistra/xns-informer/pkg/generated/" "${PROJ_ROOT}/pkg/generated"
+mv "${PROJ_ROOT}/out/github.com/maistra/xns-informer/pkg/client/" "${PROJ_ROOT}/pkg/client"
 
 rm -rd "${PROJ_ROOT}/out/github.com"
