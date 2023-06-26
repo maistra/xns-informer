@@ -79,9 +79,9 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"gvInterfaces":                   gvInterfaces,
 		"gvNewFuncs":                     gvNewFuncs,
 		"gvGoNames":                      g.gvGoNames,
-		"interfacesNewInformerFunc":      c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "NewInformerFunc"}),
-		"interfacesTweakListOptionsFunc": c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "TweakListOptionsFunc"}),
-		"informerFactoryInterface":       c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "SharedInformerFactory"}),
+		"interfacesNewInformerFunc":      c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "NewInformerFunc"}),
+		"interfacesTweakListOptionsFunc": c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "TweakListOptionsFunc"}),
+		"informerFactoryInterface":       c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "SharedInformerFactory"}),
 		"clientSetInterface":             c.Universe.Type(types.Name{Package: g.clientSetPackage, Name: "Interface"}),
 		"reflectType":                    c.Universe.Type(reflectType),
 		"runtimeObject":                  c.Universe.Type(runtimeObject),
@@ -92,6 +92,7 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"object":                         c.Universe.Type(metav1Object),
 		"xnsNamespaceSet":                c.Universe.Type(xnsNamespaceSet),
 		"xnsNewNamespaceSet":             c.Universe.Type(xnsNewNamespaceSet),
+		"genericInformer":                c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions", Name: "GenericInformer"}),
 	}
 
 	sw.Do(sharedInformerFactoryStruct, m)
@@ -313,7 +314,7 @@ type SharedInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
 	// ForResource gives generic access to a shared informer of the matching type.
-	ForResource(resource {{.schemaGroupVersionResource|raw}}) (GenericInformer, error)
+	ForResource(resource {{.schemaGroupVersionResource|raw}}) ({{.genericInformer|raw}}, error)
 
 	// InternalInformerFor returns the SharedIndexInformer for obj using an internal
 	// client.

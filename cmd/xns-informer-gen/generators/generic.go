@@ -131,6 +131,7 @@ func (g *genericGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"schemeGVs":                  schemeGVs,
 		"schemaGroupResource":        c.Universe.Type(schemaGroupResource),
 		"schemaGroupVersionResource": c.Universe.Type(schemaGroupVersionResource),
+		"genericInformer":            c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions", Name: "GenericInformer"}),
 	}
 
 	sw.Do(genericInformer, m)
@@ -140,13 +141,6 @@ func (g *genericGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 }
 
 var genericInformer = `
-// GenericInformer is type of SharedIndexInformer which will locate and delegate to other
-// sharedInformers based on type
-type GenericInformer interface {
-	Informer() {{.cacheSharedIndexInformer|raw}}
-	Lister() {{.cacheGenericLister|raw}}
-}
-
 type genericInformer struct {
 	informer {{.cacheSharedIndexInformer|raw}}
 	resource {{.schemaGroupResource|raw}}
@@ -166,7 +160,7 @@ func (f *genericInformer) Lister() {{.cacheGenericLister|raw}} {
 var forResource = `
 // ForResource gives generic access to a shared informer of the matching type
 // TODO extend this to unknown resources with a client pool
-func (f *sharedInformerFactory) ForResource(resource {{.schemaGroupVersionResource|raw}}) (GenericInformer, error) {
+func (f *sharedInformerFactory) ForResource(resource {{.schemaGroupVersionResource|raw}}) ({{.genericInformer|raw}}, error) {
 	switch resource {
 		{{range $group := .groups -}}{{$GroupGoName := .GroupGoName -}}
 			{{range $version := .Versions -}}

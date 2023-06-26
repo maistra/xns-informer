@@ -207,7 +207,6 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 
 	if len(externalGroupVersions) != 0 {
 		packageList = append(packageList,
-			factoryInterfacePackage(externalVersionPackagePath, boilerplate, customArgs.VersionedClientSetPackage),
 			factoryPackage(externalVersionPackagePath, boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
 				externalGroupVersions, customArgs.VersionedClientSetPackage, typesForGroupVersion))
 		for _, gvs := range externalGroupVersions {
@@ -217,7 +216,6 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 
 	if len(internalGroupVersions) != 0 {
 		packageList = append(packageList,
-			factoryInterfacePackage(internalVersionPackagePath, boilerplate, customArgs.InternalClientSetPackage),
 			factoryPackage(internalVersionPackagePath, boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
 				internalGroupVersions, customArgs.InternalClientSetPackage, typesForGroupVersion))
 		for _, gvs := range internalGroupVersions {
@@ -274,14 +272,14 @@ func factoryInterfacePackage(basePackage string, boilerplate []byte, clientSetPa
 		PackagePath: packagePath,
 		HeaderText:  boilerplate,
 		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
-			generators = append(generators, &factoryInterfaceGenerator{
-				DefaultGen: generator.DefaultGen{
-					OptionalName: "factory_interfaces",
-				},
-				outputPackage:    packagePath,
-				imports:          generator.NewImportTracker(),
-				clientSetPackage: clientSetPackage,
-			})
+			//generators = append(generators, &factoryInterfaceGenerator{
+			//	DefaultGen: generator.DefaultGen{
+			//		OptionalName: "factory_interfaces",
+			//	},
+			//	outputPackage:    packagePath,
+			//	imports:          generator.NewImportTracker(),
+			//	clientSetPackage: clientSetPackage,
+			//})
 
 			return generators
 		},
