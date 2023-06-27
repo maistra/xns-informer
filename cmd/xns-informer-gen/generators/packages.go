@@ -354,6 +354,7 @@ func versionPackage(basePackage, clientSetPackage, informersPackage, listersPack
 					typeToGenerate:            t,
 					imports:                   generator.NewImportTracker(),
 					clientSetPackage:          clientSetPackage,
+					informersPackage:          informersPackage,
 					listersPackage:            listersPackage,
 					internalInterfacesPackage: packageForInternalInterfaces(basePackage),
 				})
