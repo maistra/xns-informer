@@ -19,16 +19,12 @@ limitations under the License.
 package route
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/openshift/route/internalinterfaces"
-	v1 "github.com/maistra/xns-informer/pkg/generated/openshift/route/route/v1"
+	routev1 "github.com/maistra/xns-informer/pkg/generated/openshift/route/route/v1"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "github.com/openshift/client-go/route/informers/externalversions/internalinterfaces"
+	route "github.com/openshift/client-go/route/informers/externalversions/route"
+	v1 "github.com/openshift/client-go/route/informers/externalversions/route/v1"
 )
-
-// Interface provides access to each of this group's versions.
-type Interface interface {
-	// V1 provides access to shared informers for resources in V1.
-	V1() v1.Interface
-}
 
 type group struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -37,11 +33,11 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) route.Interface {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // V1 returns a new v1.Interface.
 func (g *group) V1() v1.Interface {
-	return v1.New(g.factory, g.namespaces, g.tweakListOptions)
+	return routev1.New(g.factory, g.namespaces, g.tweakListOptions)
 }

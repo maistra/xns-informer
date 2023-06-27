@@ -86,15 +86,16 @@ gateway_api_group_versions=(
   --informers-package "k8s.io/client-go/informers" \
   --listers-package "k8s.io/client-go/listers" \
   --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
-#
-#"${PROJ_ROOT}/out/xns-informer-gen" \
-#  --output-base "${PROJ_ROOT}/out" \
-#  --output-package "github.com/maistra/xns-informer/pkg/generated/openshift/route" \
-#  --single-directory \
-#  --input-dirs "$(join_by , "${openshift_group_versions[@]}")" \
-#  --versioned-clientset-package "github.com/openshift/client-go/route/clientset/versioned" \
-#  --listers-package "github.com/openshift/client-go/route/listers" \
-#  --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
+
+"${PROJ_ROOT}/out/xns-informer-gen" \
+  --output-base "${PROJ_ROOT}/out" \
+  --output-package "github.com/maistra/xns-informer/pkg/generated/openshift/route" \
+  --single-directory \
+  --input-dirs "$(join_by , "${openshift_group_versions[@]}")" \
+  --versioned-clientset-package "github.com/openshift/client-go/route/clientset/versioned" \
+  --informers-package "github.com/openshift/client-go/route/informers/externalversions" \
+  --listers-package "github.com/openshift/client-go/route/listers" \
+  --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
 
 "${PROJ_ROOT}/out/xns-informer-gen" \
   --output-base "${PROJ_ROOT}/out" \

@@ -19,15 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/openshift/route/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "github.com/openshift/client-go/route/informers/externalversions/internalinterfaces"
+	v1 "github.com/openshift/client-go/route/informers/externalversions/route/v1"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// Routes returns a RouteInformer.
-	Routes() RouteInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -36,11 +31,11 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // Routes returns a RouteInformer.
-func (v *version) Routes() RouteInformer {
+func (v *version) Routes() v1.RouteInformer {
 	return &routeInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }

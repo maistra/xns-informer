@@ -23,10 +23,12 @@ import (
 	sync "sync"
 	time "time"
 
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/openshift/route/internalinterfaces"
-	route "github.com/maistra/xns-informer/pkg/generated/openshift/route/route"
+	routeroute "github.com/maistra/xns-informer/pkg/generated/openshift/route/route"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	versioned "github.com/openshift/client-go/route/clientset/versioned"
+	externalversions "github.com/openshift/client-go/route/informers/externalversions"
+	internalinterfaces "github.com/openshift/client-go/route/informers/externalversions/internalinterfaces"
+	route "github.com/openshift/client-go/route/informers/externalversions/route"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -241,7 +243,7 @@ type SharedInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
 	// ForResource gives generic access to a shared informer of the matching type.
-	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
+	ForResource(resource schema.GroupVersionResource) (externalversions.GenericInformer, error)
 
 	// InternalInformerFor returns the SharedIndexInformer for obj using an internal
 	// client.
@@ -251,5 +253,5 @@ type SharedInformerFactory interface {
 }
 
 func (f *sharedInformerFactory) Route() route.Interface {
-	return route.New(f, f.namespaces, f.tweakListOptions)
+	return routeroute.New(f, f.namespaces, f.tweakListOptions)
 }
