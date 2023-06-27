@@ -18,8 +18,6 @@ package generators
 
 import (
 	"io"
-	"strings"
-
 	"k8s.io/code-generator/cmd/client-gen/generators/util"
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
@@ -31,6 +29,7 @@ type versionInterfaceGenerator struct {
 	generator.DefaultGen
 	outputPackage             string
 	informersPackage          string
+	groupPackage              string
 	imports                   namer.ImportTracker
 	types                     []*types.Type
 	filtered                  bool
@@ -63,14 +62,10 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
 	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
-	// This awful hack is necessary, because gateway API is generated under path .../externalversions/apis/<version>/,
-	// but its GroupVersion.PackageName() returns "gateway" and it results in invalid imports.
-	packageDirectories := strings.Split(g.outputPackage, "/")
-	apiPkgName := packageDirectories[len(packageDirectories)-2]
-	apisPkg := g.informersPackage + "/" + apiPkgName + "/" + g.version
+	versionPkg := g.informersPackage + "/" + g.groupPackage + "/" + g.version
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
-		"informersInterface":              c.Universe.Type(types.Name{Package: apisPkg, Name: "Interface"}),
+		"informersInterface":              c.Universe.Type(types.Name{Package: versionPkg, Name: "Interface"}),
 		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "TweakListOptionsFunc"}),
 		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "SharedInformerFactory"}),
 	}
@@ -83,7 +78,7 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 		}
 		m["namespaced"] = !tags.NonNamespaced
 		m["type"] = typeDef
-		m["versionedType"] = c.Universe.Type(types.Name{Package: apisPkg, Name: typeDef.Name.Name})
+		m["versionedType"] = c.Universe.Type(types.Name{Package: versionPkg, Name: typeDef.Name.Name})
 		sw.Do(versionFuncTemplate, m)
 	}
 

@@ -336,6 +336,7 @@ func versionPackage(basePackage, clientSetPackage, informersPackage, listersPack
 				},
 				outputPackage:             packagePath,
 				informersPackage:          informersPackage,
+				groupPackage:              groupPkgName,
 				imports:                   generator.NewImportTracker(),
 				types:                     typesToGenerate,
 				internalInterfacesPackage: packageForInternalInterfaces(basePackage),
