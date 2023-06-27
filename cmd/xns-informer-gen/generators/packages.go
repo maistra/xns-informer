@@ -270,28 +270,6 @@ func factoryPackage(basePackage, clientSetPackage, informersPackage string, boil
 	}
 }
 
-func factoryInterfacePackage(basePackage string, boilerplate []byte, clientSetPackage string) generator.Package {
-	packagePath := packageForInternalInterfaces(basePackage)
-
-	return &generator.DefaultPackage{
-		PackageName: filepath.Base(packagePath),
-		PackagePath: packagePath,
-		HeaderText:  boilerplate,
-		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
-			//generators = append(generators, &factoryInterfaceGenerator{
-			//	DefaultGen: generator.DefaultGen{
-			//		OptionalName: "factory_interfaces",
-			//	},
-			//	outputPackage:    packagePath,
-			//	imports:          generator.NewImportTracker(),
-			//	clientSetPackage: clientSetPackage,
-			//})
-
-			return generators
-		},
-	}
-}
-
 func groupPackage(basePackage, informersPackage string, groupVersions clientgentypes.GroupVersions, boilerplate []byte) generator.Package {
 	packagePath := filepath.Join(basePackage, groupVersions.PackageName)
 	groupPkgName := strings.Split(groupVersions.PackageName, ".")[0]
