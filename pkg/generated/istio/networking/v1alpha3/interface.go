@@ -20,8 +20,8 @@ package v1alpha3
 
 import (
 	informers "github.com/maistra/xns-informer/pkg/informers"
-	v1alpha3 "istio.io/client-go/pkg/informers/externalversions/apis/v1alpha3"
 	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
+	v1alpha3 "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
 )
 
 type version struct {

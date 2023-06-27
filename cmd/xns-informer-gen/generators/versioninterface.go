@@ -18,6 +18,7 @@ package generators
 
 import (
 	"io"
+	"strings"
 
 	"k8s.io/code-generator/cmd/client-gen/generators/util"
 	"k8s.io/gengo/generator"
@@ -62,7 +63,11 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
 	internalInterfacesPkg := g.informersPackage + "/informers/externalversions/internalinterfaces"
-	apisPkg := g.informersPackage + "/informers/externalversions/apis/" + g.version
+	// This awful hack is necessary, because gateway API is generated under path .../externalversions/apis/<version>/,
+	// but its GroupVersion.PackageName() returns "gateway" and it results in invalid imports.
+	packageDirectories := strings.Split(g.outputPackage, "/")
+	apiPkgName := packageDirectories[len(packageDirectories)-2]
+	apisPkg := g.informersPackage + "/informers/externalversions/" + apiPkgName + "/" + g.version
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
 		"informersInterface":              c.Universe.Type(types.Name{Package: apisPkg, Name: "Interface"}),
