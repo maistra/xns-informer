@@ -22,10 +22,10 @@ import (
 	networkingv1alpha3 "github.com/maistra/xns-informer/pkg/generated/istio/networking/v1alpha3"
 	networkingv1beta1 "github.com/maistra/xns-informer/pkg/generated/istio/networking/v1beta1"
 	informers "github.com/maistra/xns-informer/pkg/informers"
-	apis "istio.io/client-go/pkg/informers/externalversions/apis"
-	v1alpha3 "istio.io/client-go/pkg/informers/externalversions/apis/v1alpha3"
-	v1beta1 "istio.io/client-go/pkg/informers/externalversions/apis/v1beta1"
 	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
+	networking "istio.io/client-go/pkg/informers/externalversions/networking"
+	v1alpha3 "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
+	v1beta1 "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
 )
 
 type group struct {
@@ -35,7 +35,7 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) apis.Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) networking.Interface {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 

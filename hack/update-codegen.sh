@@ -94,16 +94,16 @@ gateway_api_group_versions=(
 #  --versioned-clientset-package "github.com/openshift/client-go/route/clientset/versioned" \
 #  --listers-package "github.com/openshift/client-go/route/listers" \
 #  --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
-#
-#"${PROJ_ROOT}/out/xns-informer-gen" \
-#  --output-base "${PROJ_ROOT}/out" \
-#  --output-package "github.com/maistra/xns-informer/pkg/generated/istio" \
-#  --single-directory \
-#  --input-dirs "$(join_by , "${istio_group_versions[@]}")" \
-#  --versioned-clientset-package "istio.io/client-go/pkg/clientset/versioned" \
-#  --informers-package "istio.io/client-go/pkg" \
-#  --listers-package "istio.io/client-go/pkg/listers" \
-#  --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
+
+"${PROJ_ROOT}/out/xns-informer-gen" \
+  --output-base "${PROJ_ROOT}/out" \
+  --output-package "github.com/maistra/xns-informer/pkg/generated/istio" \
+  --single-directory \
+  --input-dirs "$(join_by , "${istio_group_versions[@]}")" \
+  --versioned-clientset-package "istio.io/client-go/pkg/clientset/versioned" \
+  --informers-package "istio.io/client-go/pkg" \
+  --listers-package "istio.io/client-go/pkg/listers" \
+  --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
 
 "${PROJ_ROOT}/out/xns-informer-gen" \
   --output-base "${PROJ_ROOT}/out" \

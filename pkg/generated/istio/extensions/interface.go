@@ -21,8 +21,8 @@ package extensions
 import (
 	extensionsv1alpha1 "github.com/maistra/xns-informer/pkg/generated/istio/extensions/v1alpha1"
 	informers "github.com/maistra/xns-informer/pkg/informers"
-	apis "istio.io/client-go/pkg/informers/externalversions/apis"
-	v1alpha1 "istio.io/client-go/pkg/informers/externalversions/apis/v1alpha1"
+	extensions "istio.io/client-go/pkg/informers/externalversions/extensions"
+	v1alpha1 "istio.io/client-go/pkg/informers/externalversions/extensions/v1alpha1"
 	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
 )
 
@@ -33,7 +33,7 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) apis.Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) extensions.Interface {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 

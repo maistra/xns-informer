@@ -21,9 +21,9 @@ package security
 import (
 	securityv1beta1 "github.com/maistra/xns-informer/pkg/generated/istio/security/v1beta1"
 	informers "github.com/maistra/xns-informer/pkg/informers"
-	apis "istio.io/client-go/pkg/informers/externalversions/apis"
-	v1beta1 "istio.io/client-go/pkg/informers/externalversions/apis/v1beta1"
 	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
+	security "istio.io/client-go/pkg/informers/externalversions/security"
+	v1beta1 "istio.io/client-go/pkg/informers/externalversions/security/v1beta1"
 )
 
 type group struct {
@@ -33,7 +33,7 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) apis.Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) security.Interface {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 

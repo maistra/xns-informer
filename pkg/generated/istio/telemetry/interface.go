@@ -21,9 +21,9 @@ package telemetry
 import (
 	telemetryv1alpha1 "github.com/maistra/xns-informer/pkg/generated/istio/telemetry/v1alpha1"
 	informers "github.com/maistra/xns-informer/pkg/informers"
-	apis "istio.io/client-go/pkg/informers/externalversions/apis"
-	v1alpha1 "istio.io/client-go/pkg/informers/externalversions/apis/v1alpha1"
 	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
+	telemetry "istio.io/client-go/pkg/informers/externalversions/telemetry"
+	v1alpha1 "istio.io/client-go/pkg/informers/externalversions/telemetry/v1alpha1"
 )
 
 type group struct {
@@ -33,7 +33,7 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) apis.Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) telemetry.Interface {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 

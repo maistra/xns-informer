@@ -68,7 +68,7 @@ type versionData struct {
 func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
-	apisPkg := g.informersPackage + "/informers/externalversions/apis"
+	apisPkg := g.informersPackage + "/informers/externalversions/" + g.groupVersions.PackageName
 	internalInterfacesPkg := g.informersPackage + "/informers/externalversions/internalinterfaces"
 
 	versions := make([]versionData, 0, len(g.groupVersions.Versions))
