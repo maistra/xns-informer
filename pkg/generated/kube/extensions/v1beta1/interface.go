@@ -19,23 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	v1beta1 "k8s.io/client-go/informers/extensions/v1beta1"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// DaemonSets returns a DaemonSetInformer.
-	DaemonSets() DaemonSetInformer
-	// Deployments returns a DeploymentInformer.
-	Deployments() DeploymentInformer
-	// Ingresses returns a IngressInformer.
-	Ingresses() IngressInformer
-	// NetworkPolicies returns a NetworkPolicyInformer.
-	NetworkPolicies() NetworkPolicyInformer
-	// ReplicaSets returns a ReplicaSetInformer.
-	ReplicaSets() ReplicaSetInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -44,31 +31,31 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1beta1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // DaemonSets returns a DaemonSetInformer.
-func (v *version) DaemonSets() DaemonSetInformer {
+func (v *version) DaemonSets() v1beta1.DaemonSetInformer {
 	return &daemonSetInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // Deployments returns a DeploymentInformer.
-func (v *version) Deployments() DeploymentInformer {
+func (v *version) Deployments() v1beta1.DeploymentInformer {
 	return &deploymentInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // Ingresses returns a IngressInformer.
-func (v *version) Ingresses() IngressInformer {
+func (v *version) Ingresses() v1beta1.IngressInformer {
 	return &ingressInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // NetworkPolicies returns a NetworkPolicyInformer.
-func (v *version) NetworkPolicies() NetworkPolicyInformer {
+func (v *version) NetworkPolicies() v1beta1.NetworkPolicyInformer {
 	return &networkPolicyInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // ReplicaSets returns a ReplicaSetInformer.
-func (v *version) ReplicaSets() ReplicaSetInformer {
+func (v *version) ReplicaSets() v1beta1.ReplicaSetInformer {
 	return &replicaSetInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }

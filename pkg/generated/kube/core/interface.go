@@ -19,16 +19,12 @@ limitations under the License.
 package core
 
 import (
-	v1 "github.com/maistra/xns-informer/pkg/generated/kube/core/v1"
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
+	corev1 "github.com/maistra/xns-informer/pkg/generated/kube/core/v1"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	core "k8s.io/client-go/informers/core"
+	v1 "k8s.io/client-go/informers/core/v1"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 )
-
-// Interface provides access to each of this group's versions.
-type Interface interface {
-	// V1 provides access to shared informers for resources in V1.
-	V1() v1.Interface
-}
 
 type group struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -37,11 +33,11 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) core.Interface {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // V1 returns a new v1.Interface.
 func (g *group) V1() v1.Interface {
-	return v1.New(g.factory, g.namespaces, g.tweakListOptions)
+	return corev1.New(g.factory, g.namespaces, g.tweakListOptions)
 }
