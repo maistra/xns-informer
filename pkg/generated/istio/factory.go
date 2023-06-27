@@ -23,13 +23,18 @@ import (
 	sync "sync"
 	time "time"
 
-	extensions "github.com/maistra/xns-informer/pkg/generated/istio/extensions"
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/istio/internalinterfaces"
-	networking "github.com/maistra/xns-informer/pkg/generated/istio/networking"
-	security "github.com/maistra/xns-informer/pkg/generated/istio/security"
-	telemetry "github.com/maistra/xns-informer/pkg/generated/istio/telemetry"
+	istioextensions "github.com/maistra/xns-informer/pkg/generated/istio/extensions"
+	istionetworking "github.com/maistra/xns-informer/pkg/generated/istio/networking"
+	istiosecurity "github.com/maistra/xns-informer/pkg/generated/istio/security"
+	istiotelemetry "github.com/maistra/xns-informer/pkg/generated/istio/telemetry"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	versioned "istio.io/client-go/pkg/clientset/versioned"
+	externalversions "istio.io/client-go/pkg/informers/externalversions"
+	extensions "istio.io/client-go/pkg/informers/externalversions/extensions"
+	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
+	networking "istio.io/client-go/pkg/informers/externalversions/networking"
+	security "istio.io/client-go/pkg/informers/externalversions/security"
+	telemetry "istio.io/client-go/pkg/informers/externalversions/telemetry"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -244,7 +249,7 @@ type SharedInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
 	// ForResource gives generic access to a shared informer of the matching type.
-	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
+	ForResource(resource schema.GroupVersionResource) (externalversions.GenericInformer, error)
 
 	// InternalInformerFor returns the SharedIndexInformer for obj using an internal
 	// client.
@@ -257,17 +262,17 @@ type SharedInformerFactory interface {
 }
 
 func (f *sharedInformerFactory) Extensions() extensions.Interface {
-	return extensions.New(f, f.namespaces, f.tweakListOptions)
+	return istioextensions.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Networking() networking.Interface {
-	return networking.New(f, f.namespaces, f.tweakListOptions)
+	return istionetworking.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Security() security.Interface {
-	return security.New(f, f.namespaces, f.tweakListOptions)
+	return istiosecurity.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Telemetry() telemetry.Interface {
-	return telemetry.New(f, f.namespaces, f.tweakListOptions)
+	return istiotelemetry.New(f, f.namespaces, f.tweakListOptions)
 }

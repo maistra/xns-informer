@@ -26,16 +26,10 @@ import (
 	v1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	securityv1beta1 "istio.io/client-go/pkg/apis/security/v1beta1"
 	telemetryv1alpha1 "istio.io/client-go/pkg/apis/telemetry/v1alpha1"
+	externalversions "istio.io/client-go/pkg/informers/externalversions"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
-
-// GenericInformer is type of SharedIndexInformer which will locate and delegate to other
-// sharedInformers based on type
-type GenericInformer interface {
-	Informer() cache.SharedIndexInformer
-	Lister() cache.GenericLister
-}
 
 type genericInformer struct {
 	informer cache.SharedIndexInformer
@@ -54,7 +48,7 @@ func (f *genericInformer) Lister() cache.GenericLister {
 
 // ForResource gives generic access to a shared informer of the matching type
 // TODO extend this to unknown resources with a client pool
-func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
+func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (externalversions.GenericInformer, error) {
 	switch resource {
 	// Group=extensions.istio.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("wasmplugins"):

@@ -19,15 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/istio/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	v1alpha1 "istio.io/client-go/pkg/informers/externalversions/apis/v1alpha1"
+	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// WasmPlugins returns a WasmPluginInformer.
-	WasmPlugins() WasmPluginInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -36,11 +31,11 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1alpha1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // WasmPlugins returns a WasmPluginInformer.
-func (v *version) WasmPlugins() WasmPluginInformer {
+func (v *version) WasmPlugins() v1alpha1.WasmPluginInformer {
 	return &wasmPluginInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
