@@ -197,11 +197,13 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		typesToGenerate = orderer.OrderTypes(typesToGenerate)
 
 		if internal {
-			packageList = append(packageList, versionPackage(internalVersionPackagePath, groupPackageName, gv, groupGoNames[groupPackageName],
-				boilerplate, typesToGenerate, customArgs.InternalClientSetPackage, customArgs.ListersPackage))
+			packageList = append(packageList, versionPackage(internalVersionPackagePath, customArgs.InternalClientSetPackage,
+				customArgs.InformersPackage, customArgs.ListersPackage, groupPackageName, gv, groupGoNames[groupPackageName],
+				boilerplate, typesToGenerate))
 		} else {
-			packageList = append(packageList, versionPackage(externalVersionPackagePath, groupPackageName, gv, groupGoNames[groupPackageName],
-				boilerplate, typesToGenerate, customArgs.VersionedClientSetPackage, customArgs.ListersPackage))
+			packageList = append(packageList, versionPackage(externalVersionPackagePath, customArgs.VersionedClientSetPackage,
+				customArgs.InformersPackage, customArgs.ListersPackage, groupPackageName, gv, groupGoNames[groupPackageName],
+				boilerplate, typesToGenerate))
 		}
 	}
 
@@ -317,8 +319,8 @@ func groupPackage(basePackage, informersPackage string, groupVersions clientgent
 	}
 }
 
-func versionPackage(basePackage string, groupPkgName string, gv clientgentypes.GroupVersion, groupGoName string, boilerplate []byte,
-	typesToGenerate []*types.Type, clientSetPackage, listersPackage string,
+func versionPackage(basePackage, clientSetPackage, informersPackage, listersPackage string, groupPkgName string,
+	gv clientgentypes.GroupVersion, groupGoName string, boilerplate []byte, typesToGenerate []*types.Type,
 ) generator.Package {
 	packagePath := filepath.Join(basePackage, groupPkgName, strings.ToLower(gv.Version.NonEmpty()))
 
@@ -332,6 +334,7 @@ func versionPackage(basePackage string, groupPkgName string, gv clientgentypes.G
 					OptionalName: "interface",
 				},
 				outputPackage:             packagePath,
+				informersPackage:          informersPackage,
 				imports:                   generator.NewImportTracker(),
 				types:                     typesToGenerate,
 				internalInterfacesPackage: packageForInternalInterfaces(basePackage),
