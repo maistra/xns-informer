@@ -29,6 +29,7 @@ import (
 type CustomArgs struct {
 	VersionedClientSetPackage string
 	InternalClientSetPackage  string
+	InformersPackage          string
 	ListersPackage            string
 	SingleDirectory           bool
 
@@ -68,6 +69,11 @@ func (ca *CustomArgs) AddFlags(fs *pflag.FlagSet) {
 		"versioned-clientset-package",
 		ca.VersionedClientSetPackage,
 		"the full package name for the versioned clientset to use")
+	fs.StringVar(
+		&ca.InformersPackage,
+		"informers-package",
+		ca.InformersPackage,
+		"the full package name for the informers to use")
 	fs.StringVar(
 		&ca.ListersPackage,
 		"listers-package",

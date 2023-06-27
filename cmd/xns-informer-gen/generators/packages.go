@@ -207,8 +207,9 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 
 	if len(externalGroupVersions) != 0 {
 		packageList = append(packageList,
-			factoryPackage(externalVersionPackagePath, boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
-				externalGroupVersions, customArgs.VersionedClientSetPackage, typesForGroupVersion))
+			factoryPackage(externalVersionPackagePath, customArgs.VersionedClientSetPackage, customArgs.InformersPackage,
+				boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
+				externalGroupVersions, typesForGroupVersion))
 		for _, gvs := range externalGroupVersions {
 			packageList = append(packageList, groupPackage(externalVersionPackagePath, gvs, boilerplate))
 		}
@@ -216,8 +217,9 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 
 	if len(internalGroupVersions) != 0 {
 		packageList = append(packageList,
-			factoryPackage(internalVersionPackagePath, boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
-				internalGroupVersions, customArgs.InternalClientSetPackage, typesForGroupVersion))
+			factoryPackage(internalVersionPackagePath, customArgs.InternalClientSetPackage, customArgs.InformersPackage,
+				boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
+				internalGroupVersions, typesForGroupVersion))
 		for _, gvs := range internalGroupVersions {
 			packageList = append(packageList, groupPackage(internalVersionPackagePath, gvs, boilerplate))
 		}
@@ -226,8 +228,8 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 	return packageList
 }
 
-func factoryPackage(basePackage string, boilerplate []byte, groupGoNames, pluralExceptions map[string]string,
-	groupVersions map[string]clientgentypes.GroupVersions, clientSetPackage string, typesForGroupVersion map[clientgentypes.GroupVersion][]*types.Type,
+func factoryPackage(basePackage, clientSetPackage, informersPackage string, boilerplate []byte, groupGoNames, pluralExceptions map[string]string,
+	groupVersions map[string]clientgentypes.GroupVersions, typesForGroupVersion map[clientgentypes.GroupVersion][]*types.Type,
 ) generator.Package {
 	return &generator.DefaultPackage{
 		PackageName: filepath.Base(basePackage),
@@ -240,6 +242,7 @@ func factoryPackage(basePackage string, boilerplate []byte, groupGoNames, plural
 						OptionalName: "factory",
 					},
 					outputPackage:             basePackage,
+					informersPackage:          informersPackage,
 					imports:                   generator.NewImportTracker(),
 					groupVersions:             groupVersions,
 					clientSetPackage:          clientSetPackage,
