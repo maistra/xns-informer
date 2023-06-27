@@ -257,6 +257,7 @@ func factoryPackage(basePackage, clientSetPackage, informersPackage string, boil
 						OptionalName: "generic",
 					},
 					outputPackage:        basePackage,
+					informersPackage:     informersPackage,
 					imports:              generator.NewImportTracker(),
 					groupVersions:        groupVersions,
 					pluralExceptions:     pluralExceptions,

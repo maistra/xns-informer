@@ -32,6 +32,7 @@ import (
 type genericGenerator struct {
 	generator.DefaultGen
 	outputPackage        string
+	informersPackage     string
 	imports              namer.ImportTracker
 	groupVersions        map[string]clientgentypes.GroupVersions
 	groupGoNames         map[string]string
@@ -123,6 +124,7 @@ func (g *genericGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 	}
 	sort.Sort(groupSort(groups))
 
+	externalVersionsPkg := g.informersPackage + "/informers/externalversions"
 	m := map[string]interface{}{
 		"cacheGenericLister":         c.Universe.Type(cacheGenericLister),
 		"cacheNewGenericLister":      c.Universe.Function(cacheNewGenericLister),
@@ -131,7 +133,7 @@ func (g *genericGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"schemeGVs":                  schemeGVs,
 		"schemaGroupResource":        c.Universe.Type(schemaGroupResource),
 		"schemaGroupVersionResource": c.Universe.Type(schemaGroupVersionResource),
-		"genericInformer":            c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions", Name: "GenericInformer"}),
+		"genericInformer":            c.Universe.Type(types.Name{Package: externalVersionsPkg, Name: "GenericInformer"}),
 	}
 
 	sw.Do(genericInformer, m)
