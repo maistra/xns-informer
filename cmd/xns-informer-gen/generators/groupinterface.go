@@ -31,6 +31,7 @@ import (
 type groupInterfaceGenerator struct {
 	generator.DefaultGen
 	outputPackage             string
+	informersPackage          string
 	imports                   namer.ImportTracker
 	groupVersions             clientgentypes.GroupVersions
 	filtered                  bool
@@ -67,11 +68,14 @@ type versionData struct {
 func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
+	apisPkg := g.informersPackage + "/informers/externalversions/apis"
+	internalInterfacesPkg := g.informersPackage + "/informers/externalversions/internalinterfaces"
+
 	versions := make([]versionData, 0, len(g.groupVersions.Versions))
 	for _, version := range g.groupVersions.Versions {
 		gv := clientgentypes.GroupVersion{Group: g.groupVersions.Group, Version: version.Version}
 		versionPackage := filepath.Join(g.outputPackage, strings.ToLower(gv.Version.NonEmpty()))
-		upstreamVersionPackage := filepath.Join("sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis", strings.ToLower(gv.Version.NonEmpty()))
+		upstreamVersionPackage := filepath.Join(apisPkg, strings.ToLower(gv.Version.NonEmpty()))
 		versions = append(versions, versionData{
 			Name:      namer.IC(version.Version.NonEmpty()),
 			Interface: c.Universe.Type(types.Name{Package: upstreamVersionPackage, Name: "Interface"}),
@@ -80,9 +84,9 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 	}
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
-		"newInterface":                    c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis", Name: "Interface"}),
-		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "TweakListOptionsFunc"}),
-		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces", Name: "SharedInformerFactory"}),
+		"newInterface":                    c.Universe.Type(types.Name{Package: apisPkg, Name: "Interface"}),
+		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "TweakListOptionsFunc"}),
+		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "SharedInformerFactory"}),
 		"versions":                        versions,
 	}
 
