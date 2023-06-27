@@ -101,7 +101,7 @@ gateway_api_group_versions=(
   --single-directory \
   --input-dirs "$(join_by , "${istio_group_versions[@]}")" \
   --versioned-clientset-package "istio.io/client-go/pkg/clientset/versioned" \
-  --informers-package "istio.io/client-go/pkg" \
+  --informers-package "istio.io/client-go/pkg/informers/externalversions" \
   --listers-package "istio.io/client-go/pkg/listers" \
   --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
 
@@ -111,7 +111,7 @@ gateway_api_group_versions=(
   --single-directory \
   --input-dirs "$(join_by , "${gateway_api_group_versions[@]}")" \
   --versioned-clientset-package "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned" \
-  --informers-package "sigs.k8s.io/gateway-api/pkg/client" \
+  --informers-package "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions" \
   --listers-package "sigs.k8s.io/gateway-api/pkg/client/listers" \
   --go-header-file "${PROJ_ROOT}/hack/boilerplate.go.txt"
 

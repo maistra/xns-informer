@@ -62,12 +62,12 @@ func (g *versionInterfaceGenerator) Imports(c *generator.Context) (imports []str
 func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
-	internalInterfacesPkg := g.informersPackage + "/informers/externalversions/internalinterfaces"
+	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
 	// This awful hack is necessary, because gateway API is generated under path .../externalversions/apis/<version>/,
 	// but its GroupVersion.PackageName() returns "gateway" and it results in invalid imports.
 	packageDirectories := strings.Split(g.outputPackage, "/")
 	apiPkgName := packageDirectories[len(packageDirectories)-2]
-	apisPkg := g.informersPackage + "/informers/externalversions/" + apiPkgName + "/" + g.version
+	apisPkg := g.informersPackage + "/" + apiPkgName + "/" + g.version
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
 		"informersInterface":              c.Universe.Type(types.Name{Package: apisPkg, Name: "Interface"}),

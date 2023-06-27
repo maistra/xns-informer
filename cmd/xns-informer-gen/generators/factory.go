@@ -68,13 +68,12 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 
 	klog.V(5).Infof("processing type %v", t)
 
-	internalInterfacesPkg := g.informersPackage + "/informers/externalversions/internalinterfaces"
-	externalVersionsPkg := g.informersPackage + "/informers/externalversions"
+	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
 
 	gvInterfaces := make(map[string]*types.Type)
 	gvNewFuncs := make(map[string]*types.Type)
 	for groupPkgName := range g.groupVersions {
-		gvInterfaces[groupPkgName] = c.Universe.Type(types.Name{Package: path.Join(externalVersionsPkg, groupPkgName), Name: "Interface"})
+		gvInterfaces[groupPkgName] = c.Universe.Type(types.Name{Package: path.Join(g.informersPackage, groupPkgName), Name: "Interface"})
 		gvNewFuncs[groupPkgName] = c.Universe.Function(types.Name{Package: path.Join(g.outputPackage, groupPkgName), Name: "New"})
 	}
 	m := map[string]interface{}{
@@ -96,7 +95,7 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"object":                         c.Universe.Type(metav1Object),
 		"xnsNamespaceSet":                c.Universe.Type(xnsNamespaceSet),
 		"xnsNewNamespaceSet":             c.Universe.Type(xnsNewNamespaceSet),
-		"genericInformer":                c.Universe.Type(types.Name{Package: externalVersionsPkg, Name: "GenericInformer"}),
+		"genericInformer":                c.Universe.Type(types.Name{Package: g.informersPackage, Name: "GenericInformer"}),
 	}
 
 	sw.Do(sharedInformerFactoryStruct, m)
