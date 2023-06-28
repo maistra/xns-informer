@@ -24,6 +24,7 @@ import (
 	time "time"
 
 	kubeadmissionregistration "github.com/maistra/xns-informer/pkg/generated/kube/admissionregistration"
+	kubeapiserverinternal "github.com/maistra/xns-informer/pkg/generated/kube/apiserverinternal"
 	kubeapps "github.com/maistra/xns-informer/pkg/generated/kube/apps"
 	kubeautoscaling "github.com/maistra/xns-informer/pkg/generated/kube/autoscaling"
 	kubebatch "github.com/maistra/xns-informer/pkg/generated/kube/batch"
@@ -38,6 +39,7 @@ import (
 	kubenode "github.com/maistra/xns-informer/pkg/generated/kube/node"
 	kubepolicy "github.com/maistra/xns-informer/pkg/generated/kube/policy"
 	kuberbac "github.com/maistra/xns-informer/pkg/generated/kube/rbac"
+	kuberesource "github.com/maistra/xns-informer/pkg/generated/kube/resource"
 	kubescheduling "github.com/maistra/xns-informer/pkg/generated/kube/scheduling"
 	kubestorage "github.com/maistra/xns-informer/pkg/generated/kube/storage"
 	informers "github.com/maistra/xns-informer/pkg/informers"
@@ -46,6 +48,7 @@ import (
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	clientgoinformers "k8s.io/client-go/informers"
 	admissionregistration "k8s.io/client-go/informers/admissionregistration"
+	apiserverinternal "k8s.io/client-go/informers/apiserverinternal"
 	apps "k8s.io/client-go/informers/apps"
 	autoscaling "k8s.io/client-go/informers/autoscaling"
 	batch "k8s.io/client-go/informers/batch"
@@ -61,6 +64,7 @@ import (
 	node "k8s.io/client-go/informers/node"
 	policy "k8s.io/client-go/informers/policy"
 	rbac "k8s.io/client-go/informers/rbac"
+	resource "k8s.io/client-go/informers/resource"
 	scheduling "k8s.io/client-go/informers/scheduling"
 	storage "k8s.io/client-go/informers/storage"
 	kubernetes "k8s.io/client-go/kubernetes"
@@ -282,6 +286,7 @@ type SharedInformerFactory interface {
 	InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer
 
 	Admissionregistration() admissionregistration.Interface
+	Internal() apiserverinternal.Interface
 	Apps() apps.Interface
 	Autoscaling() autoscaling.Interface
 	Batch() batch.Interface
@@ -296,12 +301,17 @@ type SharedInformerFactory interface {
 	Node() node.Interface
 	Policy() policy.Interface
 	Rbac() rbac.Interface
+	Resource() resource.Interface
 	Scheduling() scheduling.Interface
 	Storage() storage.Interface
 }
 
 func (f *sharedInformerFactory) Admissionregistration() admissionregistration.Interface {
 	return kubeadmissionregistration.New(f, f.namespaces, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Internal() apiserverinternal.Interface {
+	return kubeapiserverinternal.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Apps() apps.Interface {
@@ -358,6 +368,10 @@ func (f *sharedInformerFactory) Policy() policy.Interface {
 
 func (f *sharedInformerFactory) Rbac() rbac.Interface {
 	return kuberbac.New(f, f.namespaces, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Resource() resource.Interface {
+	return kuberesource.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Scheduling() scheduling.Interface {
