@@ -199,6 +199,11 @@ func (i *multiNamespaceInformer) RemoveNamespace(namespace string) {
 
 // Run starts all informers and waits for the stop channel to close.
 func (i *multiNamespaceInformer) Run(stopCh <-chan struct{}) {
+	if i.hasStarted() {
+		klog.Warningf("The multiNamespaceInformer has started, run more than once is not allowed")
+		return
+	}
+
 	func() {
 		i.lock.Lock()
 		defer i.lock.Unlock()
@@ -216,13 +221,17 @@ func (i *multiNamespaceInformer) Run(stopCh <-chan struct{}) {
 	defer i.lock.Unlock()
 
 	for namespace := range i.informers {
-		// Close and recreate the channel.
 		close(i.stopChans[namespace])
-		i.stopChans[namespace] = make(chan struct{})
 	}
 
-	i.started = false
 	i.stopped = true
+}
+
+func (i *multiNamespaceInformer) hasStarted() bool {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	return i.started
 }
 
 // AddEventHandler adds the given handler to each namespaced informer.
