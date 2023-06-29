@@ -49,7 +49,7 @@ type multiNamespaceInformer struct {
 	namespaces    NamespaceSet
 	newInformer   NewInformerFunc
 
-	handlerRegs map[cache.SharedIndexInformer]cache.ResourceEventHandlerRegistration
+	registrationHandlers map[string]cache.ResourceEventHandlerRegistration
 }
 
 var _ cache.SharedIndexInformer = &multiNamespaceInformer{}
@@ -67,7 +67,7 @@ func NewMultiNamespaceInformer(namespaces NamespaceSet, resync time.Duration, ne
 		resyncPeriod:  resync,
 		newInformer:   newInformer,
 
-		handlerRegs: make(map[cache.SharedIndexInformer]cache.ResourceEventHandlerRegistration),
+		registrationHandlers: make(map[string]cache.ResourceEventHandlerRegistration),
 	}
 
 	namespaces.AddHandler(NamespaceSetHandlerFuncs{
@@ -140,13 +140,14 @@ func (i *multiNamespaceInformer) AddNamespace(namespace string) {
 
 	// Add event handlers to the new informer.
 	for _, handler := range i.eventHandlers {
-		_, err := informer.AddEventHandlerWithResyncPeriod(
+		r, err := informer.AddEventHandlerWithResyncPeriod(
 			handler.handler,
 			handler.resyncPeriod,
 		)
 		if err != nil {
 			klog.Errorf("Failed to add event handler for namespace %q: %v", namespace, err)
 		}
+		i.registrationHandlers[namespace] = r
 	}
 
 	// Add watch error handler.
@@ -245,12 +246,12 @@ func (i *multiNamespaceInformer) AddEventHandlerWithResyncPeriod(
 		resyncPeriod: resyncPeriod,
 	})
 
-	for _, informer := range i.informers {
-		reg, err := informer.AddEventHandlerWithResyncPeriod(handler, resyncPeriod)
+	for ns, informer := range i.informers {
+		r, err := informer.AddEventHandlerWithResyncPeriod(handler, resyncPeriod)
 		if err != nil {
 			return nil, err
 		}
-		i.handlerRegs[informer] = reg
+		i.registrationHandlers[ns] = r
 	}
 	return i, nil
 }
@@ -312,16 +313,16 @@ func (i *multiNamespaceInformer) SetTransform(handler cache.TransformFunc) error
 	return errors.NewAggregate(errList)
 }
 
-func (i *multiNamespaceInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+func (i *multiNamespaceInformer) RemoveEventHandler(_ cache.ResourceEventHandlerRegistration) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	for _, inf := range i.informers {
-		reg, found := i.handlerRegs[inf]
+	for ns, inf := range i.informers {
+		r, found := i.registrationHandlers[ns]
 		if !found {
 			continue
 		}
-		if err := inf.RemoveEventHandler(reg); err != nil {
+		if err := inf.RemoveEventHandler(r); err != nil {
 			return err
 		}
 	}
