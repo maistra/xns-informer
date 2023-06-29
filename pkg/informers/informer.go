@@ -48,6 +48,8 @@ type multiNamespaceInformer struct {
 	stopped       bool
 	namespaces    NamespaceSet
 	newInformer   NewInformerFunc
+
+	handlerRegs map[cache.SharedIndexInformer]cache.ResourceEventHandlerRegistration
 }
 
 var _ cache.SharedIndexInformer = &multiNamespaceInformer{}
@@ -64,6 +66,8 @@ func NewMultiNamespaceInformer(namespaces NamespaceSet, resync time.Duration, ne
 		namespaces:    namespaces,
 		resyncPeriod:  resync,
 		newInformer:   newInformer,
+
+		handlerRegs: make(map[cache.SharedIndexInformer]cache.ResourceEventHandlerRegistration),
 	}
 
 	namespaces.AddHandler(NamespaceSetHandlerFuncs{
@@ -242,10 +246,11 @@ func (i *multiNamespaceInformer) AddEventHandlerWithResyncPeriod(
 	})
 
 	for _, informer := range i.informers {
-		_, err := informer.AddEventHandlerWithResyncPeriod(handler, resyncPeriod)
+		reg, err := informer.AddEventHandlerWithResyncPeriod(handler, resyncPeriod)
 		if err != nil {
 			return nil, err
 		}
+		i.handlerRegs[informer] = reg
 	}
 	return i, nil
 }
@@ -312,7 +317,11 @@ func (i *multiNamespaceInformer) RemoveEventHandler(handle cache.ResourceEventHa
 	defer i.lock.Unlock()
 
 	for _, inf := range i.informers {
-		if err := inf.RemoveEventHandler(handle); err != nil {
+		reg, found := i.handlerRegs[inf]
+		if !found {
+			continue
+		}
+		if err := inf.RemoveEventHandler(reg); err != nil {
 			return err
 		}
 	}
