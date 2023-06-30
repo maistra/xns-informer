@@ -69,7 +69,9 @@ type versionData struct {
 func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
+	var generateGroupInterfaceTemplate bool
 	if g.informersPackage == "" {
+		generateGroupInterfaceTemplate = true
 		g.informersPackage = g.outputPackage
 	}
 	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
@@ -94,10 +96,24 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 		"versions":                        versions,
 	}
 
+	if generateGroupInterfaceTemplate {
+		groupTemplate = groupInterfaceTemplate + groupTemplate
+	}
 	sw.Do(groupTemplate, m)
 
 	return sw.Error()
 }
+
+var groupInterfaceTemplate = `
+// Interface provides access to each of this group's versions.
+type Interface interface {
+	$range .versions -$
+		// $.Name$ provides access to shared informers for resources in $.Name$.
+		$.Name$() $.Interface|raw$
+	$end$
+}
+
+`
 
 var groupTemplate = `
 type group struct {
