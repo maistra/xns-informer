@@ -68,10 +68,14 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 
 	klog.V(5).Infof("processing type %v", t)
 
+	var generateGenericInformer bool
+	var internalInterfacesPkg string
 	if g.informersPackage == "" {
-		g.informersPackage = g.internalInterfacesPackage
+		generateGenericInformer = true
+		internalInterfacesPkg = g.internalInterfacesPackage
+	} else {
+		internalInterfacesPkg = g.informersPackage + "/internalinterfaces"
 	}
-	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
 
 	gvInterfaces := make(map[string]*types.Type)
 	gvNewFuncs := make(map[string]*types.Type)
@@ -98,6 +102,7 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"object":                         c.Universe.Type(metav1Object),
 		"xnsNamespaceSet":                c.Universe.Type(xnsNamespaceSet),
 		"xnsNewNamespaceSet":             c.Universe.Type(xnsNewNamespaceSet),
+		"generateGenericInformer":        generateGenericInformer,
 		"genericInformer":                c.Universe.Type(types.Name{Package: g.informersPackage, Name: "GenericInformer"}),
 	}
 
@@ -320,7 +325,7 @@ type SharedInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
 	// ForResource gives generic access to a shared informer of the matching type.
-	ForResource(resource {{.schemaGroupVersionResource|raw}}) ({{.genericInformer|raw}}, error)
+	ForResource(resource {{.schemaGroupVersionResource|raw}}) ({{if .generateGenericInformer}}GenericInformer{{else}}{{.genericInformer|raw}}{{end}}, error)
 
 	// InternalInformerFor returns the SharedIndexInformer for obj using an internal
 	// client.
