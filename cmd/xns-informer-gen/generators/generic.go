@@ -97,7 +97,9 @@ func (v versionSort) Swap(i, j int) { v[i], v[j] = v[j], v[i] }
 func (g *genericGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "{{", "}}")
 
+	var generateGenericInformer bool
 	if g.informersPackage == "" {
+		generateGenericInformer = true
 		g.informersPackage = g.outputPackage
 	}
 	groups := []group{}
@@ -138,11 +140,25 @@ func (g *genericGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"genericInformer":            c.Universe.Type(types.Name{Package: g.informersPackage, Name: "GenericInformer"}),
 	}
 
+	if generateGenericInformer {
+		genericInformer = genericInformerInterface + genericInformer
+	}
+
 	sw.Do(genericInformer, m)
 	sw.Do(forResource, m)
 
 	return sw.Error()
 }
+
+var genericInformerInterface = `
+// GenericInformer is type of SharedIndexInformer which will locate and delegate to other
+// sharedInformers based on type
+type GenericInformer interface {
+	Informer() {{.cacheSharedIndexInformer|raw}}
+	Lister() {{.cacheGenericLister|raw}}
+}
+
+`
 
 var genericInformer = `
 type genericInformer struct {
