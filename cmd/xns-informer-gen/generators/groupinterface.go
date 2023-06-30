@@ -75,7 +75,7 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 	if g.informersPackage == "" {
 		generateGroupInterfaceTemplate = true
 		internalInterfacesPkg = g.internalInterfacesPackage
-		newInterfaceType = c.Universe.Type(types.Name{Name: "Interface"})
+		newInterfaceType = c.Universe.Type(types.Name{Name: "Interface", Package: g.outputPackage})
 	} else {
 		internalInterfacesPkg = g.informersPackage + "/internalinterfaces"
 		newInterfaceType = c.Universe.Type(types.Name{Name: "Interface", Package: g.informersPackage + "/" + g.groupVersions.PackageName})
