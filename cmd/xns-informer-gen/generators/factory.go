@@ -70,17 +70,20 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 
 	var generateGenericInformer bool
 	var internalInterfacesPkg string
+	var interfacePkg string
 	if g.informersPackage == "" {
 		generateGenericInformer = true
 		internalInterfacesPkg = g.internalInterfacesPackage
+		interfacePkg = g.outputPackage
 	} else {
 		internalInterfacesPkg = g.informersPackage + "/internalinterfaces"
+		interfacePkg = g.informersPackage
 	}
 
 	gvInterfaces := make(map[string]*types.Type)
 	gvNewFuncs := make(map[string]*types.Type)
 	for groupPkgName := range g.groupVersions {
-		gvInterfaces[groupPkgName] = c.Universe.Type(types.Name{Package: path.Join(g.informersPackage, groupPkgName), Name: "Interface"})
+		gvInterfaces[groupPkgName] = c.Universe.Type(types.Name{Package: path.Join(interfacePkg, groupPkgName), Name: "Interface"})
 		gvNewFuncs[groupPkgName] = c.Universe.Function(types.Name{Package: path.Join(g.outputPackage, groupPkgName), Name: "New"})
 	}
 	m := map[string]interface{}{
