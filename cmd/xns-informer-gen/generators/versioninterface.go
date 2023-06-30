@@ -64,7 +64,7 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
 	if g.informersPackage == "" {
-		g.informersPackage = g.outputPackage
+		g.informersPackage = g.internalInterfacesPackage
 	}
 	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
 	versionPkg := g.informersPackage + "/" + g.groupPackage + "/" + g.version

@@ -69,7 +69,7 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 	klog.V(5).Infof("processing type %v", t)
 
 	if g.informersPackage == "" {
-		g.informersPackage = g.outputPackage
+		g.informersPackage = g.internalInterfacesPackage
 	}
 	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
 

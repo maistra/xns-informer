@@ -72,7 +72,7 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 	var generateGroupInterfaceTemplate bool
 	if g.informersPackage == "" {
 		generateGroupInterfaceTemplate = true
-		g.informersPackage = g.outputPackage
+		g.informersPackage = g.internalInterfacesPackage
 	}
 	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
 	groupPkg := g.informersPackage + "/" + g.groupVersions.PackageName
