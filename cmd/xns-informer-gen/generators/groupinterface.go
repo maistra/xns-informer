@@ -69,6 +69,9 @@ type versionData struct {
 func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
+	if g.informersPackage == "" {
+		g.informersPackage = g.outputPackage
+	}
 	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
 	groupPkg := g.informersPackage + "/" + g.groupVersions.PackageName
 

@@ -97,6 +97,9 @@ func (v versionSort) Swap(i, j int) { v[i], v[j] = v[j], v[i] }
 func (g *genericGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "{{", "}}")
 
+	if g.informersPackage == "" {
+		g.informersPackage = g.outputPackage
+	}
 	groups := []group{}
 	schemeGVs := make(map[*version]*types.Type)
 

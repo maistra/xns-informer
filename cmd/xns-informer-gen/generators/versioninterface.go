@@ -63,6 +63,9 @@ func (g *versionInterfaceGenerator) Imports(c *generator.Context) (imports []str
 func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
+	if g.informersPackage == "" {
+		g.informersPackage = g.outputPackage
+	}
 	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
 	versionPkg := g.informersPackage + "/" + g.groupPackage + "/" + g.version
 	m := map[string]interface{}{
