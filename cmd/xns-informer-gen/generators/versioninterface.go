@@ -83,6 +83,9 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 	}
 
 	sw.Do(versionTemplate, m)
+	if generateInterface {
+		sw.Do(versionInterfaceTemplate, m)
+	}
 	for _, typeDef := range g.types {
 		tags, err := util.ParseClientGenTags(append(typeDef.SecondClosestCommentLines, typeDef.CommentLines...))
 		if err != nil {
@@ -91,9 +94,6 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 		m["namespaced"] = !tags.NonNamespaced
 		m["type"] = typeDef
 		m["versionedType"] = c.Universe.Type(types.Name{Package: versionInterfacePkg, Name: typeDef.Name.Name})
-		if generateInterface {
-			sw.Do(versionInterfaceTemplate, m)
-		}
 		sw.Do(versionFuncTemplate, m)
 	}
 

@@ -67,10 +67,12 @@ func (g *informerGenerator) GenerateType(c *generator.Context, t *types.Type, w 
 
 	klog.V(5).Infof("processing type %v", t)
 
+	var internalInterfacesPkg string
 	if g.informersPackage == "" {
-		g.informersPackage = g.internalInterfacesPackage
+		internalInterfacesPkg = g.internalInterfacesPackage
+	} else {
+		internalInterfacesPkg = g.informersPackage + "/internalinterfaces"
 	}
-	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
 	listerPackage := fmt.Sprintf("%s/%s/%s", g.listersPackage, g.groupPkgName, strings.ToLower(g.groupVersion.Version.NonEmpty()))
 	clientSetInterface := c.Universe.Type(types.Name{Package: g.clientSetPackage, Name: "Interface"})
 	informerFor := "InformerFor"
