@@ -70,27 +70,36 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
 	var generateGroupInterfaceTemplate bool
+	var internalInterfacesPkg string
+	var newInterfaceType *types.Type
 	if g.informersPackage == "" {
 		generateGroupInterfaceTemplate = true
-		g.informersPackage = g.internalInterfacesPackage
+		internalInterfacesPkg = g.internalInterfacesPackage
+		newInterfaceType = c.Universe.Type(types.Name{Name: "Interface"})
+	} else {
+		internalInterfacesPkg = g.informersPackage + "/internalinterfaces"
+		newInterfaceType = c.Universe.Type(types.Name{Name: "Interface", Package: g.informersPackage + "/" + g.groupVersions.PackageName})
 	}
-	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
-	groupPkg := g.informersPackage + "/" + g.groupVersions.PackageName
 
 	versions := make([]versionData, 0, len(g.groupVersions.Versions))
 	for _, version := range g.groupVersions.Versions {
 		gv := clientgentypes.GroupVersion{Group: g.groupVersions.Group, Version: version.Version}
 		versionPackage := filepath.Join(g.outputPackage, strings.ToLower(gv.Version.NonEmpty()))
-		upstreamVersionPackage := filepath.Join(groupPkg, strings.ToLower(gv.Version.NonEmpty()))
+		var interfaceType string
+		if g.informersPackage == "" {
+			interfaceType = versionPackage
+		} else {
+			interfaceType = filepath.Join(g.informersPackage+"/"+g.groupVersions.PackageName, strings.ToLower(gv.Version.NonEmpty()))
+		}
 		versions = append(versions, versionData{
 			Name:      namer.IC(version.Version.NonEmpty()),
-			Interface: c.Universe.Type(types.Name{Package: upstreamVersionPackage, Name: "Interface"}),
+			Interface: c.Universe.Type(types.Name{Package: interfaceType, Name: "Interface"}),
 			New:       c.Universe.Function(types.Name{Package: versionPackage, Name: "New"}),
 		})
 	}
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
-		"newInterface":                    c.Universe.Type(types.Name{Package: groupPkg, Name: "Interface"}),
+		"newInterface":                    newInterfaceType,
 		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "TweakListOptionsFunc"}),
 		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "SharedInformerFactory"}),
 		"versions":                        versions,
