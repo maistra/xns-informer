@@ -208,6 +208,9 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 	}
 
 	if len(externalGroupVersions) != 0 {
+		if customArgs.InformersPackage == "" {
+			packageList = append(packageList, factoryInterfacePackage(externalVersionPackagePath, boilerplate, customArgs.VersionedClientSetPackage))
+		}
 		packageList = append(packageList,
 			factoryPackage(externalVersionPackagePath, customArgs.VersionedClientSetPackage, customArgs.InformersPackage,
 				boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
@@ -218,6 +221,9 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 	}
 
 	if len(internalGroupVersions) != 0 {
+		if customArgs.InformersPackage == "" {
+			packageList = append(packageList, factoryInterfacePackage(internalVersionPackagePath, boilerplate, customArgs.InternalClientSetPackage))
+		}
 		packageList = append(packageList,
 			factoryPackage(internalVersionPackagePath, customArgs.InternalClientSetPackage, customArgs.InformersPackage,
 				boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
@@ -264,6 +270,28 @@ func factoryPackage(basePackage, clientSetPackage, informersPackage string, boil
 					typesForGroupVersion: typesForGroupVersion,
 					groupGoNames:         groupGoNames,
 				})
+
+			return generators
+		},
+	}
+}
+
+func factoryInterfacePackage(basePackage string, boilerplate []byte, clientSetPackage string) generator.Package {
+	packagePath := packageForInternalInterfaces(basePackage)
+
+	return &generator.DefaultPackage{
+		PackageName: filepath.Base(packagePath),
+		PackagePath: packagePath,
+		HeaderText:  boilerplate,
+		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+			generators = append(generators, &factoryInterfaceGenerator{
+				DefaultGen: generator.DefaultGen{
+					OptionalName: "factory_interfaces",
+				},
+				outputPackage:    packagePath,
+				imports:          generator.NewImportTracker(),
+				clientSetPackage: clientSetPackage,
+			})
 
 			return generators
 		},
