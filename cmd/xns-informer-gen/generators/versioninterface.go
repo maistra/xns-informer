@@ -63,14 +63,21 @@ func (g *versionInterfaceGenerator) Imports(c *generator.Context) (imports []str
 func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
+	var generateInterface bool
+	var internalInterfacesPkg string
+	var versionInterfacePkg string
 	if g.informersPackage == "" {
-		g.informersPackage = g.internalInterfacesPackage
+		generateInterface = true
+		internalInterfacesPkg = g.internalInterfacesPackage
+		versionInterfacePkg = g.outputPackage
+	} else {
+		internalInterfacesPkg = g.informersPackage + "/internalinterfaces"
+		versionInterfacePkg = g.informersPackage + "/" + g.groupPackage + "/" + g.version
 	}
-	internalInterfacesPkg := g.informersPackage + "/internalinterfaces"
-	versionPkg := g.informersPackage + "/" + g.groupPackage + "/" + g.version
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
-		"informersInterface":              c.Universe.Type(types.Name{Package: versionPkg, Name: "Interface"}),
+		"generateInterface":               generateInterface,
+		"informersInterface":              c.Universe.Type(types.Name{Package: versionInterfacePkg, Name: "Interface"}),
 		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "TweakListOptionsFunc"}),
 		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "SharedInformerFactory"}),
 	}
@@ -83,12 +90,25 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 		}
 		m["namespaced"] = !tags.NonNamespaced
 		m["type"] = typeDef
-		m["versionedType"] = c.Universe.Type(types.Name{Package: versionPkg, Name: typeDef.Name.Name})
+		m["versionedType"] = c.Universe.Type(types.Name{Package: versionInterfacePkg, Name: typeDef.Name.Name})
+		if generateInterface {
+			sw.Do(versionInterfaceTemplate, m)
+		}
 		sw.Do(versionFuncTemplate, m)
 	}
 
 	return sw.Error()
 }
+
+var versionInterfaceTemplate = `
+// Interface provides access to all the informers in this group version.
+type Interface interface {
+	$range .types -$
+		// $.|publicPlural$ returns a $.|public$Informer.
+		$.|publicPlural$() $.|public$Informer
+	$end$
+}
+`
 
 var versionTemplate = `
 type version struct {

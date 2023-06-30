@@ -147,7 +147,8 @@ func (g *genericGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 }
 
 var genericInformer = `
-{{if .generateGenericInformer}}// GenericInformer is type of SharedIndexInformer which will locate and delegate to other
+{{if .generateGenericInformer}}
+// GenericInformer is type of SharedIndexInformer which will locate and delegate to other
 // sharedInformers based on type
 type GenericInformer interface {
 	Informer() {{.cacheSharedIndexInformer|raw}}

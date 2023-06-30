@@ -69,11 +69,11 @@ type versionData struct {
 func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
-	var generateGroupInterfaceTemplate bool
+	var generateGroupInterface bool
 	var internalInterfacesPkg string
 	var newInterfaceType *types.Type
 	if g.informersPackage == "" {
-		generateGroupInterfaceTemplate = true
+		generateGroupInterface = true
 		internalInterfacesPkg = g.internalInterfacesPackage
 		newInterfaceType = c.Universe.Type(types.Name{Name: "Interface", Package: g.outputPackage})
 	} else {
@@ -99,14 +99,15 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 	}
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
+		"generateGroupInterface":          generateGroupInterface,
 		"newInterface":                    newInterfaceType,
 		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "TweakListOptionsFunc"}),
 		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "SharedInformerFactory"}),
 		"versions":                        versions,
 	}
 
-	if generateGroupInterfaceTemplate {
-		groupTemplate = groupInterfaceTemplate + groupTemplate
+	if generateGroupInterface {
+		sw.Do(groupInterfaceTemplate, m)
 	}
 	sw.Do(groupTemplate, m)
 
@@ -121,7 +122,6 @@ type Interface interface {
 		$.Name$() $.Interface|raw$
 	$end$
 }
-
 `
 
 var groupTemplate = `
