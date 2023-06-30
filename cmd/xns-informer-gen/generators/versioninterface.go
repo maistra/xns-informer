@@ -80,12 +80,13 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 		"informersInterface":              c.Universe.Type(types.Name{Package: versionInterfacePkg, Name: "Interface"}),
 		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "TweakListOptionsFunc"}),
 		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "SharedInformerFactory"}),
+		"types":                           g.types,
 	}
 
-	sw.Do(versionTemplate, m)
 	if generateInterface {
 		sw.Do(versionInterfaceTemplate, m)
 	}
+	sw.Do(versionTemplate, m)
 	for _, typeDef := range g.types {
 		tags, err := util.ParseClientGenTags(append(typeDef.SecondClosestCommentLines, typeDef.CommentLines...))
 		if err != nil {
