@@ -175,7 +175,7 @@ func (f *genericInformer) Lister() {{.cacheGenericLister|raw}} {
 var forResource = `
 // ForResource gives generic access to a shared informer of the matching type
 // TODO extend this to unknown resources with a client pool
-func (f *sharedInformerFactory) ForResource(resource {{.schemaGroupVersionResource|raw}}) ({{if .generateGenericInformer}}GenericInformer{{else}}{{.genericInformer|raw}}{{end}}, error) {
+func (f *sharedInformerFactory) ForResource(resource {{.schemaGroupVersionResource|raw}}) ({{.genericInformer|raw}}, error) {
 	switch resource {
 		{{range $group := .groups -}}{{$GroupGoName := .GroupGoName -}}
 			{{range $version := .Versions -}}
