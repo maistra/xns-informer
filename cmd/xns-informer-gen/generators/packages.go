@@ -114,6 +114,13 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		externalVersionPackagePath = filepath.Join(arguments.OutputPackagePath, "externalversions")
 	}
 
+	// The default value of informers package is the output package path, so when these values are equal,
+	// it means that custom informers package was not specified and we don't use upstream types,
+	// so all interfaces must be generated.
+	// On the other hand, when informers package is specified, then we don't generate interfaces, like GenericInformer,
+	// group.Interface or version.Interface, because generated factory methods return interfaces from the specified package.
+	generateInterfaces := arguments.OutputPackagePath == customArgs.InformersPackage
+
 	var packageList generator.Packages
 	typesForGroupVersion := make(map[clientgentypes.GroupVersion][]*types.Type)
 
@@ -199,39 +206,37 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		if internal {
 			packageList = append(packageList, versionPackage(internalVersionPackagePath, customArgs.InternalClientSetPackage,
 				customArgs.InformersPackage, customArgs.ListersPackage, groupPackageName, gv, groupGoNames[groupPackageName],
-				boilerplate, typesToGenerate))
+				boilerplate, typesToGenerate, generateInterfaces))
 		} else {
 			packageList = append(packageList, versionPackage(externalVersionPackagePath, customArgs.VersionedClientSetPackage,
 				customArgs.InformersPackage, customArgs.ListersPackage, groupPackageName, gv, groupGoNames[groupPackageName],
-				boilerplate, typesToGenerate))
+				boilerplate, typesToGenerate, generateInterfaces))
 		}
 	}
 
 	if len(externalGroupVersions) != 0 {
-		if customArgs.InformersPackage == "" {
+		if generateInterfaces {
 			packageList = append(packageList, factoryInterfacePackage(externalVersionPackagePath, boilerplate, customArgs.VersionedClientSetPackage))
 		}
 		packageList = append(packageList,
 			factoryPackage(externalVersionPackagePath, customArgs.VersionedClientSetPackage, customArgs.InformersPackage,
 				boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
-				externalGroupVersions, typesForGroupVersion))
+				externalGroupVersions, typesForGroupVersion, generateInterfaces))
 		for _, gvs := range externalGroupVersions {
-			packageList = append(packageList, groupPackage(externalVersionPackagePath, customArgs.InformersPackage, gvs, boilerplate))
+			packageList = append(packageList, groupPackage(externalVersionPackagePath, customArgs.InformersPackage, gvs, boilerplate, generateInterfaces))
 		}
 	}
 
 	if len(internalGroupVersions) != 0 {
-		// When customArgs.InformersPackage is not empty, then we don't generate SharedInformerFactory interface,
-		// because its equivalent from the specified package will be used.
-		if customArgs.InformersPackage == "" {
+		if generateInterfaces {
 			packageList = append(packageList, factoryInterfacePackage(internalVersionPackagePath, boilerplate, customArgs.InternalClientSetPackage))
 		}
 		packageList = append(packageList,
 			factoryPackage(internalVersionPackagePath, customArgs.InternalClientSetPackage, customArgs.InformersPackage,
 				boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
-				internalGroupVersions, typesForGroupVersion))
+				internalGroupVersions, typesForGroupVersion, generateInterfaces))
 		for _, gvs := range internalGroupVersions {
-			packageList = append(packageList, groupPackage(internalVersionPackagePath, customArgs.InformersPackage, gvs, boilerplate))
+			packageList = append(packageList, groupPackage(internalVersionPackagePath, customArgs.InformersPackage, gvs, boilerplate, generateInterfaces))
 		}
 	}
 
@@ -239,21 +244,13 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 }
 
 func factoryPackage(basePackage, clientSetPackage, informersPackage string, boilerplate []byte, groupGoNames, pluralExceptions map[string]string,
-	groupVersions map[string]clientgentypes.GroupVersions, typesForGroupVersion map[clientgentypes.GroupVersion][]*types.Type,
+	groupVersions map[string]clientgentypes.GroupVersions, typesForGroupVersion map[clientgentypes.GroupVersion][]*types.Type, generateInterfaces bool,
 ) generator.Package {
 	return &generator.DefaultPackage{
 		PackageName: filepath.Base(basePackage),
 		PackagePath: basePackage,
 		HeaderText:  boilerplate,
 		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
-			// GenericInformer interface is not generated  when informers package is not empty,
-			// because then its upstream equivalent is used.
-			var generateGenericInformer bool
-			if informersPackage == "" {
-				// When informers package is not specified, then we use packages of our informers as returned types.
-				informersPackage = basePackage
-				generateGenericInformer = true
-			}
 			generators = append(generators,
 				&factoryGenerator{
 					DefaultGen: generator.DefaultGen{
@@ -279,7 +276,7 @@ func factoryPackage(basePackage, clientSetPackage, informersPackage string, boil
 					pluralExceptions:        pluralExceptions,
 					typesForGroupVersion:    typesForGroupVersion,
 					groupGoNames:            groupGoNames,
-					generateGenericInformer: generateGenericInformer,
+					generateGenericInformer: generateInterfaces,
 				})
 
 			return generators
@@ -309,7 +306,9 @@ func factoryInterfacePackage(basePackage string, boilerplate []byte, clientSetPa
 	}
 }
 
-func groupPackage(basePackage, informersPackage string, groupVersions clientgentypes.GroupVersions, boilerplate []byte) generator.Package {
+func groupPackage(
+	basePackage, informersPackage string, groupVersions clientgentypes.GroupVersions, boilerplate []byte, generateInterfaces bool,
+) generator.Package {
 	packagePath := filepath.Join(basePackage, groupVersions.PackageName)
 	groupPkgName := strings.Split(groupVersions.PackageName, ".")[0]
 
@@ -318,14 +317,6 @@ func groupPackage(basePackage, informersPackage string, groupVersions clientgent
 		PackagePath: packagePath,
 		HeaderText:  boilerplate,
 		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
-			// Group interface, like route.Interface, is not generated when informers package is not empty,
-			// because then its upstream equivalent is used.
-			var generateGroupInterface bool
-			if informersPackage == "" {
-				generateGroupInterface = true
-				// When informers package is not specified, then we use packages of our informers as returned types.
-				informersPackage = basePackage
-			}
 			generators = append(generators, &groupInterfaceGenerator{
 				DefaultGen: generator.DefaultGen{
 					OptionalName: "interface",
@@ -333,7 +324,7 @@ func groupPackage(basePackage, informersPackage string, groupVersions clientgent
 				outputPackage:             packagePath,
 				groupVersions:             groupVersions,
 				imports:                   generator.NewImportTracker(),
-				generateGroupInterface:    generateGroupInterface,
+				generateGroupInterface:    generateInterfaces,
 				groupInterfacePackage:     filepath.Join(informersPackage, groupVersions.PackageName),
 				internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
 			})
@@ -347,7 +338,7 @@ func groupPackage(basePackage, informersPackage string, groupVersions clientgent
 }
 
 func versionPackage(basePackage, clientSetPackage, informersPackage, listersPackage string, groupPkgName string,
-	gv clientgentypes.GroupVersion, groupGoName string, boilerplate []byte, typesToGenerate []*types.Type,
+	gv clientgentypes.GroupVersion, groupGoName string, boilerplate []byte, typesToGenerate []*types.Type, generateInterfaces bool,
 ) generator.Package {
 	packagePath := filepath.Join(basePackage, groupPkgName, strings.ToLower(gv.Version.NonEmpty()))
 
@@ -356,18 +347,13 @@ func versionPackage(basePackage, clientSetPackage, informersPackage, listersPack
 		PackagePath: packagePath,
 		HeaderText:  boilerplate,
 		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
-			var generateVersionInterface bool
-			if informersPackage == "" {
-				generateVersionInterface = true
-				informersPackage = basePackage
-			}
 			generators = append(generators, &versionInterfaceGenerator{
 				DefaultGen: generator.DefaultGen{
 					OptionalName: "interface",
 				},
 				outputPackage:             packagePath,
 				groupVersionPackage:       filepath.Join(informersPackage, groupPkgName, gv.Version.String()),
-				generateVersionInterface:  generateVersionInterface,
+				generateVersionInterface:  generateInterfaces,
 				internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
 				imports:                   generator.NewImportTracker(),
 				types:                     typesToGenerate,
