@@ -30,13 +30,12 @@ import (
 type versionInterfaceGenerator struct {
 	generator.DefaultGen
 	outputPackage             string
-	informersPackage          string
 	groupVersionPackage       string
+	generateVersionInterface  bool
+	internalInterfacesPackage string
 	imports                   namer.ImportTracker
 	types                     []*types.Type
 	filtered                  bool
-	internalInterfacesPackage string
-	generateVersionInterface  bool
 }
 
 var _ generator.Generator = &versionInterfaceGenerator{}

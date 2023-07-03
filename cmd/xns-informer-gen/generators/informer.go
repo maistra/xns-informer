@@ -40,7 +40,6 @@ type informerGenerator struct {
 	typeToGenerate            *types.Type
 	imports                   namer.ImportTracker
 	clientSetPackage          string
-	informersPackage          string
 	listersPackage            string
 	internalInterfacesPackage string
 }

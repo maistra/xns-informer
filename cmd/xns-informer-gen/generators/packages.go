@@ -331,7 +331,6 @@ func groupPackage(basePackage, informersPackage string, groupVersions clientgent
 					OptionalName: "interface",
 				},
 				outputPackage:             packagePath,
-				informersPackage:          informersPackage,
 				groupVersions:             groupVersions,
 				imports:                   generator.NewImportTracker(),
 				generateGroupInterface:    generateGroupInterface,
@@ -367,12 +366,11 @@ func versionPackage(basePackage, clientSetPackage, informersPackage, listersPack
 					OptionalName: "interface",
 				},
 				outputPackage:             packagePath,
-				informersPackage:          informersPackage,
 				groupVersionPackage:       filepath.Join(informersPackage, groupPkgName, gv.Version.String()),
+				generateVersionInterface:  generateVersionInterface,
+				internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
 				imports:                   generator.NewImportTracker(),
 				types:                     typesToGenerate,
-				internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
-				generateVersionInterface:  generateVersionInterface,
 			})
 
 			for _, t := range typesToGenerate {
@@ -387,7 +385,6 @@ func versionPackage(basePackage, clientSetPackage, informersPackage, listersPack
 					typeToGenerate:            t,
 					imports:                   generator.NewImportTracker(),
 					clientSetPackage:          clientSetPackage,
-					informersPackage:          informersPackage,
 					listersPackage:            listersPackage,
 					internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
 				})

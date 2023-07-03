@@ -32,7 +32,6 @@ import (
 type groupInterfaceGenerator struct {
 	generator.DefaultGen
 	outputPackage             string
-	informersPackage          string
 	imports                   namer.ImportTracker
 	groupVersions             clientgentypes.GroupVersions
 	filtered                  bool
