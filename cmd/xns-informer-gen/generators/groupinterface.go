@@ -74,17 +74,12 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 	versions := make([]versionData, 0, len(g.groupVersions.Versions))
 	for _, version := range g.groupVersions.Versions {
 		gv := clientgentypes.GroupVersion{Group: g.groupVersions.Group, Version: version.Version}
-		versionPackage := filepath.Join(g.outputPackage, strings.ToLower(gv.Version.NonEmpty()))
-		var interfaceType string
-		if g.informersPackage == "" {
-			interfaceType = versionPackage
-		} else {
-			interfaceType = filepath.Join(g.informersPackage+"/"+g.groupVersions.PackageName, strings.ToLower(gv.Version.NonEmpty()))
-		}
+		interfacePackage := filepath.Join(g.groupInterfacePackage, strings.ToLower(gv.Version.NonEmpty()))
+		newPackage := filepath.Join(g.outputPackage, strings.ToLower(gv.Version.NonEmpty()))
 		versions = append(versions, versionData{
 			Name:      namer.IC(version.Version.NonEmpty()),
-			Interface: c.Universe.Type(types.Name{Package: interfaceType, Name: "Interface"}),
-			New:       c.Universe.Function(types.Name{Package: versionPackage, Name: "New"}),
+			Interface: c.Universe.Type(types.Name{Package: interfacePackage, Name: "Interface"}),
+			New:       c.Universe.Function(types.Name{Package: newPackage, Name: "New"}),
 		})
 	}
 	m := map[string]interface{}{
