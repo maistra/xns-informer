@@ -244,6 +244,9 @@ func factoryPackage(basePackage, clientSetPackage, informersPackage string, boil
 		PackagePath: basePackage,
 		HeaderText:  boilerplate,
 		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+			if informersPackage == "" {
+				informersPackage = basePackage
+			}
 			generators = append(generators,
 				&factoryGenerator{
 					DefaultGen: generator.DefaultGen{
@@ -254,7 +257,7 @@ func factoryPackage(basePackage, clientSetPackage, informersPackage string, boil
 					imports:                   generator.NewImportTracker(),
 					groupVersions:             groupVersions,
 					clientSetPackage:          clientSetPackage,
-					internalInterfacesPackage: packageForInternalInterfaces(basePackage),
+					internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
 					gvGoNames:                 groupGoNames,
 				},
 

@@ -68,22 +68,10 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 
 	klog.V(5).Infof("processing type %v", t)
 
-	var generateGenericInformer bool
-	var internalInterfacesPkg string
-	var interfacePkg string
-	if g.informersPackage == "" {
-		generateGenericInformer = true
-		internalInterfacesPkg = g.internalInterfacesPackage
-		interfacePkg = g.outputPackage
-	} else {
-		internalInterfacesPkg = g.informersPackage + "/internalinterfaces"
-		interfacePkg = g.informersPackage
-	}
-
 	gvInterfaces := make(map[string]*types.Type)
 	gvNewFuncs := make(map[string]*types.Type)
 	for groupPkgName := range g.groupVersions {
-		gvInterfaces[groupPkgName] = c.Universe.Type(types.Name{Package: path.Join(interfacePkg, groupPkgName), Name: "Interface"})
+		gvInterfaces[groupPkgName] = c.Universe.Type(types.Name{Package: path.Join(g.informersPackage, groupPkgName), Name: "Interface"})
 		gvNewFuncs[groupPkgName] = c.Universe.Function(types.Name{Package: path.Join(g.outputPackage, groupPkgName), Name: "New"})
 	}
 	m := map[string]interface{}{
@@ -92,9 +80,9 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"gvInterfaces":                   gvInterfaces,
 		"gvNewFuncs":                     gvNewFuncs,
 		"gvGoNames":                      g.gvGoNames,
-		"interfacesNewInformerFunc":      c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "NewInformerFunc"}),
-		"interfacesTweakListOptionsFunc": c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "TweakListOptionsFunc"}),
-		"informerFactoryInterface":       c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "SharedInformerFactory"}),
+		"interfacesNewInformerFunc":      c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "NewInformerFunc"}),
+		"interfacesTweakListOptionsFunc": c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "TweakListOptionsFunc"}),
+		"informerFactoryInterface":       c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "SharedInformerFactory"}),
 		"clientSetInterface":             c.Universe.Type(types.Name{Package: g.clientSetPackage, Name: "Interface"}),
 		"reflectType":                    c.Universe.Type(reflectType),
 		"runtimeObject":                  c.Universe.Type(runtimeObject),
@@ -105,7 +93,6 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"object":                         c.Universe.Type(metav1Object),
 		"xnsNamespaceSet":                c.Universe.Type(xnsNamespaceSet),
 		"xnsNewNamespaceSet":             c.Universe.Type(xnsNewNamespaceSet),
-		"generateGenericInformer":        generateGenericInformer,
 		"genericInformer":                c.Universe.Type(types.Name{Package: g.informersPackage, Name: "GenericInformer"}),
 	}
 
@@ -328,7 +315,7 @@ type SharedInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
 	// ForResource gives generic access to a shared informer of the matching type.
-	ForResource(resource {{.schemaGroupVersionResource|raw}}) ({{if .generateGenericInformer}}GenericInformer{{else}}{{.genericInformer|raw}}{{end}}, error)
+	ForResource(resource {{.schemaGroupVersionResource|raw}}) ({{.genericInformer|raw}}, error)
 
 	// InternalInformerFor returns the SharedIndexInformer for obj using an internal
 	// client.
