@@ -357,17 +357,22 @@ func versionPackage(basePackage, clientSetPackage, informersPackage, listersPack
 		PackagePath: packagePath,
 		HeaderText:  boilerplate,
 		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+			var generateVersionInterface bool
+			if informersPackage == "" {
+				generateVersionInterface = true
+				informersPackage = basePackage
+			}
 			generators = append(generators, &versionInterfaceGenerator{
 				DefaultGen: generator.DefaultGen{
 					OptionalName: "interface",
 				},
 				outputPackage:             packagePath,
 				informersPackage:          informersPackage,
-				groupPackage:              groupPkgName,
+				groupVersionPackage:       filepath.Join(informersPackage, groupPkgName, gv.Version.String()),
 				imports:                   generator.NewImportTracker(),
 				types:                     typesToGenerate,
-				internalInterfacesPackage: packageForInternalInterfaces(basePackage),
-				version:                   gv.Version.String(),
+				internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
+				generateVersionInterface:  generateVersionInterface,
 			})
 
 			for _, t := range typesToGenerate {
@@ -384,7 +389,7 @@ func versionPackage(basePackage, clientSetPackage, informersPackage, listersPack
 					clientSetPackage:          clientSetPackage,
 					informersPackage:          informersPackage,
 					listersPackage:            listersPackage,
-					internalInterfacesPackage: packageForInternalInterfaces(basePackage),
+					internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
 				})
 			}
 			return generators

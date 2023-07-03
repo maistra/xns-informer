@@ -31,12 +31,12 @@ type versionInterfaceGenerator struct {
 	generator.DefaultGen
 	outputPackage             string
 	informersPackage          string
-	groupPackage              string
+	groupVersionPackage       string
 	imports                   namer.ImportTracker
 	types                     []*types.Type
 	filtered                  bool
 	internalInterfacesPackage string
-	version                   string
+	generateVersionInterface  bool
 }
 
 var _ generator.Generator = &versionInterfaceGenerator{}
@@ -63,27 +63,15 @@ func (g *versionInterfaceGenerator) Imports(c *generator.Context) (imports []str
 func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
-	var generateInterface bool
-	var internalInterfacesPkg string
-	var versionInterfacePkg string
-	if g.informersPackage == "" {
-		generateInterface = true
-		internalInterfacesPkg = g.internalInterfacesPackage
-		versionInterfacePkg = g.outputPackage
-	} else {
-		internalInterfacesPkg = g.informersPackage + "/internalinterfaces"
-		versionInterfacePkg = g.informersPackage + "/" + g.groupPackage + "/" + g.version
-	}
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
-		"generateInterface":               generateInterface,
-		"informersInterface":              c.Universe.Type(types.Name{Package: versionInterfacePkg, Name: "Interface"}),
-		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "TweakListOptionsFunc"}),
-		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "SharedInformerFactory"}),
+		"informersInterface":              c.Universe.Type(types.Name{Package: g.groupVersionPackage, Name: "Interface"}),
+		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "TweakListOptionsFunc"}),
+		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "SharedInformerFactory"}),
 		"types":                           g.types,
 	}
 
-	if generateInterface {
+	if g.generateVersionInterface {
 		sw.Do(versionInterfaceTemplate, m)
 	}
 	sw.Do(versionTemplate, m)
@@ -94,7 +82,7 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 		}
 		m["namespaced"] = !tags.NonNamespaced
 		m["type"] = typeDef
-		m["versionedType"] = c.Universe.Type(types.Name{Package: versionInterfacePkg, Name: typeDef.Name.Name})
+		m["versionedType"] = c.Universe.Type(types.Name{Package: g.groupVersionPackage, Name: typeDef.Name.Name})
 		sw.Do(versionFuncTemplate, m)
 	}
 

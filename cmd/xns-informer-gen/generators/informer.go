@@ -67,12 +67,6 @@ func (g *informerGenerator) GenerateType(c *generator.Context, t *types.Type, w 
 
 	klog.V(5).Infof("processing type %v", t)
 
-	var internalInterfacesPkg string
-	if g.informersPackage == "" {
-		internalInterfacesPkg = g.internalInterfacesPackage
-	} else {
-		internalInterfacesPkg = g.informersPackage + "/internalinterfaces"
-	}
 	listerPackage := fmt.Sprintf("%s/%s/%s", g.listersPackage, g.groupPkgName, strings.ToLower(g.groupVersion.Version.NonEmpty()))
 	clientSetInterface := c.Universe.Type(types.Name{Package: g.clientSetPackage, Name: "Interface"})
 	informerFor := "InformerFor"
@@ -93,8 +87,8 @@ func (g *informerGenerator) GenerateType(c *generator.Context, t *types.Type, w 
 		"clientSetInterface":              clientSetInterface,
 		"group":                           namer.IC(g.groupGoName),
 		"informerFor":                     informerFor,
-		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "TweakListOptionsFunc"}),
-		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "SharedInformerFactory"}),
+		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "TweakListOptionsFunc"}),
+		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "SharedInformerFactory"}),
 		"listOptions":                     c.Universe.Type(listOptions),
 		"lister":                          c.Universe.Type(types.Name{Package: listerPackage, Name: t.Name.Name + "Lister"}),
 		"namespaceAll":                    c.Universe.Type(metav1NamespaceAll),
