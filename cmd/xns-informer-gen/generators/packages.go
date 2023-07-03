@@ -114,12 +114,13 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		externalVersionPackagePath = filepath.Join(arguments.OutputPackagePath, "externalversions")
 	}
 
-	// The default value of informers package is the output package path, so when these values are equal,
-	// it means that custom informers package was not specified and we don't use upstream types,
-	// so all interfaces must be generated.
-	// On the other hand, when informers package is specified, then we don't generate interfaces, like GenericInformer,
-	// group.Interface or version.Interface, because generated factory methods return interfaces from the specified package.
-	generateInterfaces := arguments.OutputPackagePath == customArgs.InformersPackage
+	// When informers package is specified, then we don't generate interfaces, like GenericInformer, group.Interface
+	// or version.Interface, because generated factory methods return interfaces from the specified package.
+	var generateInterfaces bool
+	if customArgs.InformersPackage == "" {
+		generateInterfaces = true
+		customArgs.InformersPackage = filepath.Join(arguments.OutputPackagePath)
+	}
 
 	var packageList generator.Packages
 	typesForGroupVersion := make(map[clientgentypes.GroupVersion][]*types.Type)
