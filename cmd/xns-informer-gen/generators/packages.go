@@ -244,8 +244,10 @@ func factoryPackage(basePackage, clientSetPackage, informersPackage string, boil
 		PackagePath: basePackage,
 		HeaderText:  boilerplate,
 		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+			var generateGenericInformer bool
 			if informersPackage == "" {
 				informersPackage = basePackage
+				generateGenericInformer = true
 			}
 			generators = append(generators,
 				&factoryGenerator{
@@ -265,13 +267,14 @@ func factoryPackage(basePackage, clientSetPackage, informersPackage string, boil
 					DefaultGen: generator.DefaultGen{
 						OptionalName: "generic",
 					},
-					outputPackage:        basePackage,
-					informersPackage:     informersPackage,
-					imports:              generator.NewImportTracker(),
-					groupVersions:        groupVersions,
-					pluralExceptions:     pluralExceptions,
-					typesForGroupVersion: typesForGroupVersion,
-					groupGoNames:         groupGoNames,
+					outputPackage:           basePackage,
+					informersPackage:        informersPackage,
+					imports:                 generator.NewImportTracker(),
+					groupVersions:           groupVersions,
+					pluralExceptions:        pluralExceptions,
+					typesForGroupVersion:    typesForGroupVersion,
+					groupGoNames:            groupGoNames,
+					generateGenericInformer: generateGenericInformer,
 				})
 
 			return generators
