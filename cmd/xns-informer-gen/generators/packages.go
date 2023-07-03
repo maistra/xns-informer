@@ -318,6 +318,14 @@ func groupPackage(basePackage, informersPackage string, groupVersions clientgent
 		PackagePath: packagePath,
 		HeaderText:  boilerplate,
 		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+			// Group interface, like route.Interface, is not generated when informers package is not empty,
+			// because then its upstream equivalent is used.
+			var generateGroupInterface bool
+			if informersPackage == "" {
+				generateGroupInterface = true
+				// When informers package is not specified, then we use packages of our informers as returned types.
+				informersPackage = basePackage
+			}
 			generators = append(generators, &groupInterfaceGenerator{
 				DefaultGen: generator.DefaultGen{
 					OptionalName: "interface",
@@ -326,7 +334,9 @@ func groupPackage(basePackage, informersPackage string, groupVersions clientgent
 				informersPackage:          informersPackage,
 				groupVersions:             groupVersions,
 				imports:                   generator.NewImportTracker(),
-				internalInterfacesPackage: packageForInternalInterfaces(basePackage),
+				generateGroupInterface:    generateGroupInterface,
+				groupInterfacePackage:     filepath.Join(informersPackage, groupVersions.PackageName),
+				internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
 			})
 			return generators
 		},

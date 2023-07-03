@@ -36,6 +36,8 @@ type groupInterfaceGenerator struct {
 	imports                   namer.ImportTracker
 	groupVersions             clientgentypes.GroupVersions
 	filtered                  bool
+	generateGroupInterface    bool
+	groupInterfacePackage     string
 	internalInterfacesPackage string
 }
 
@@ -69,18 +71,6 @@ type versionData struct {
 func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 
-	var generateGroupInterface bool
-	var internalInterfacesPkg string
-	var newInterfaceType *types.Type
-	if g.informersPackage == "" {
-		generateGroupInterface = true
-		internalInterfacesPkg = g.internalInterfacesPackage
-		newInterfaceType = c.Universe.Type(types.Name{Name: "Interface", Package: g.outputPackage})
-	} else {
-		internalInterfacesPkg = g.informersPackage + "/internalinterfaces"
-		newInterfaceType = c.Universe.Type(types.Name{Name: "Interface", Package: g.informersPackage + "/" + g.groupVersions.PackageName})
-	}
-
 	versions := make([]versionData, 0, len(g.groupVersions.Versions))
 	for _, version := range g.groupVersions.Versions {
 		gv := clientgentypes.GroupVersion{Group: g.groupVersions.Group, Version: version.Version}
@@ -99,14 +89,13 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 	}
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
-		"generateGroupInterface":          generateGroupInterface,
-		"newInterface":                    newInterfaceType,
-		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "TweakListOptionsFunc"}),
-		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: internalInterfacesPkg, Name: "SharedInformerFactory"}),
+		"newInterface":                    c.Universe.Type(types.Name{Package: g.groupInterfacePackage, Name: "Interface"}),
+		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "TweakListOptionsFunc"}),
+		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "SharedInformerFactory"}),
 		"versions":                        versions,
 	}
 
-	if generateGroupInterface {
+	if g.generateGroupInterface {
 		sw.Do(groupInterfaceTemplate, m)
 	}
 	sw.Do(groupTemplate, m)
