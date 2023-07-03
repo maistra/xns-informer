@@ -221,6 +221,8 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 	}
 
 	if len(internalGroupVersions) != 0 {
+		// When customArgs.InformersPackage is not empty, then we don't generate SharedInformerFactory interface,
+		// because its equivalent from the specified package will be used.
 		if customArgs.InformersPackage == "" {
 			packageList = append(packageList, factoryInterfacePackage(internalVersionPackagePath, boilerplate, customArgs.InternalClientSetPackage))
 		}
@@ -244,8 +246,11 @@ func factoryPackage(basePackage, clientSetPackage, informersPackage string, boil
 		PackagePath: basePackage,
 		HeaderText:  boilerplate,
 		GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+			// GenericInformer interface is not generated  when informers package is not empty,
+			// because then its upstream equivalent is used.
 			var generateGenericInformer bool
 			if informersPackage == "" {
+				// When informers package is not specified, then we use packages of our informers as returned types.
 				informersPackage = basePackage
 				generateGenericInformer = true
 			}

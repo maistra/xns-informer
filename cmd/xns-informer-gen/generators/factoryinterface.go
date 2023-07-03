@@ -22,8 +22,6 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// TODO: Skip creation of the generator when informers package is not empty.
-
 // factoryInterfaceGenerator produces a file of interfaces used to break a dependency cycle for
 // informer registration
 type factoryInterfaceGenerator struct {
