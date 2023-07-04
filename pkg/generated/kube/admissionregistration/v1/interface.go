@@ -19,17 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	v1 "k8s.io/client-go/informers/admissionregistration/v1"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// MutatingWebhookConfigurations returns a MutatingWebhookConfigurationInformer.
-	MutatingWebhookConfigurations() MutatingWebhookConfigurationInformer
-	// ValidatingWebhookConfigurations returns a ValidatingWebhookConfigurationInformer.
-	ValidatingWebhookConfigurations() ValidatingWebhookConfigurationInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -38,16 +31,16 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // MutatingWebhookConfigurations returns a MutatingWebhookConfigurationInformer.
-func (v *version) MutatingWebhookConfigurations() MutatingWebhookConfigurationInformer {
+func (v *version) MutatingWebhookConfigurations() v1.MutatingWebhookConfigurationInformer {
 	return &mutatingWebhookConfigurationInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // ValidatingWebhookConfigurations returns a ValidatingWebhookConfigurationInformer.
-func (v *version) ValidatingWebhookConfigurations() ValidatingWebhookConfigurationInformer {
+func (v *version) ValidatingWebhookConfigurations() v1.ValidatingWebhookConfigurationInformer {
 	return &validatingWebhookConfigurationInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

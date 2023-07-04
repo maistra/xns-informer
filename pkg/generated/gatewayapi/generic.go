@@ -25,14 +25,8 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 	v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	v1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	externalversions "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 )
-
-// GenericInformer is type of SharedIndexInformer which will locate and delegate to other
-// sharedInformers based on type
-type GenericInformer interface {
-	Informer() cache.SharedIndexInformer
-	Lister() cache.GenericLister
-}
 
 type genericInformer struct {
 	informer cache.SharedIndexInformer
@@ -51,7 +45,7 @@ func (f *genericInformer) Lister() cache.GenericLister {
 
 // ForResource gives generic access to a shared informer of the matching type
 // TODO extend this to unknown resources with a client pool
-func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
+func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (externalversions.GenericInformer, error) {
 	switch resource {
 	// Group=gateway.networking.k8s.io, Version=v1alpha2
 	case v1alpha2.SchemeGroupVersion.WithResource("grpcroutes"):

@@ -19,19 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/istio/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
+	v1beta1 "istio.io/client-go/pkg/informers/externalversions/security/v1beta1"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// AuthorizationPolicies returns a AuthorizationPolicyInformer.
-	AuthorizationPolicies() AuthorizationPolicyInformer
-	// PeerAuthentications returns a PeerAuthenticationInformer.
-	PeerAuthentications() PeerAuthenticationInformer
-	// RequestAuthentications returns a RequestAuthenticationInformer.
-	RequestAuthentications() RequestAuthenticationInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -40,21 +31,21 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1beta1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // AuthorizationPolicies returns a AuthorizationPolicyInformer.
-func (v *version) AuthorizationPolicies() AuthorizationPolicyInformer {
+func (v *version) AuthorizationPolicies() v1beta1.AuthorizationPolicyInformer {
 	return &authorizationPolicyInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // PeerAuthentications returns a PeerAuthenticationInformer.
-func (v *version) PeerAuthentications() PeerAuthenticationInformer {
+func (v *version) PeerAuthentications() v1beta1.PeerAuthenticationInformer {
 	return &peerAuthenticationInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // RequestAuthentications returns a RequestAuthenticationInformer.
-func (v *version) RequestAuthentications() RequestAuthenticationInformer {
+func (v *version) RequestAuthentications() v1beta1.RequestAuthenticationInformer {
 	return &requestAuthenticationInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }

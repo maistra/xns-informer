@@ -19,19 +19,16 @@ limitations under the License.
 package admissionregistration
 
 import (
-	v1 "github.com/maistra/xns-informer/pkg/generated/kube/admissionregistration/v1"
-	v1beta1 "github.com/maistra/xns-informer/pkg/generated/kube/admissionregistration/v1beta1"
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
+	admissionregistrationv1 "github.com/maistra/xns-informer/pkg/generated/kube/admissionregistration/v1"
+	admissionregistrationv1alpha1 "github.com/maistra/xns-informer/pkg/generated/kube/admissionregistration/v1alpha1"
+	admissionregistrationv1beta1 "github.com/maistra/xns-informer/pkg/generated/kube/admissionregistration/v1beta1"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	admissionregistration "k8s.io/client-go/informers/admissionregistration"
+	v1 "k8s.io/client-go/informers/admissionregistration/v1"
+	v1alpha1 "k8s.io/client-go/informers/admissionregistration/v1alpha1"
+	v1beta1 "k8s.io/client-go/informers/admissionregistration/v1beta1"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 )
-
-// Interface provides access to each of this group's versions.
-type Interface interface {
-	// V1 provides access to shared informers for resources in V1.
-	V1() v1.Interface
-	// V1beta1 provides access to shared informers for resources in V1beta1.
-	V1beta1() v1beta1.Interface
-}
 
 type group struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -40,16 +37,21 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) admissionregistration.Interface {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // V1 returns a new v1.Interface.
 func (g *group) V1() v1.Interface {
-	return v1.New(g.factory, g.namespaces, g.tweakListOptions)
+	return admissionregistrationv1.New(g.factory, g.namespaces, g.tweakListOptions)
+}
+
+// V1alpha1 returns a new v1alpha1.Interface.
+func (g *group) V1alpha1() v1alpha1.Interface {
+	return admissionregistrationv1alpha1.New(g.factory, g.namespaces, g.tweakListOptions)
 }
 
 // V1beta1 returns a new v1beta1.Interface.
 func (g *group) V1beta1() v1beta1.Interface {
-	return v1beta1.New(g.factory, g.namespaces, g.tweakListOptions)
+	return admissionregistrationv1beta1.New(g.factory, g.namespaces, g.tweakListOptions)
 }

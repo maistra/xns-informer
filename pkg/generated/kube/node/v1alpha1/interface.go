@@ -19,15 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
+	v1alpha1 "k8s.io/client-go/informers/node/v1alpha1"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// RuntimeClasses returns a RuntimeClassInformer.
-	RuntimeClasses() RuntimeClassInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -36,11 +31,11 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1alpha1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // RuntimeClasses returns a RuntimeClassInformer.
-func (v *version) RuntimeClasses() RuntimeClassInformer {
+func (v *version) RuntimeClasses() v1alpha1.RuntimeClassInformer {
 	return &runtimeClassInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

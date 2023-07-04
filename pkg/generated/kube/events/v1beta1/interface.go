@@ -19,15 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	v1beta1 "k8s.io/client-go/informers/events/v1beta1"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// Events returns a EventInformer.
-	Events() EventInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -36,11 +31,11 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1beta1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // Events returns a EventInformer.
-func (v *version) Events() EventInformer {
+func (v *version) Events() v1beta1.EventInformer {
 	return &eventInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }

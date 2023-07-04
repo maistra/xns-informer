@@ -19,16 +19,12 @@ limitations under the License.
 package security
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/istio/internalinterfaces"
-	v1beta1 "github.com/maistra/xns-informer/pkg/generated/istio/security/v1beta1"
+	securityv1beta1 "github.com/maistra/xns-informer/pkg/generated/istio/security/v1beta1"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
+	security "istio.io/client-go/pkg/informers/externalversions/security"
+	v1beta1 "istio.io/client-go/pkg/informers/externalversions/security/v1beta1"
 )
-
-// Interface provides access to each of this group's versions.
-type Interface interface {
-	// V1beta1 provides access to shared informers for resources in V1beta1.
-	V1beta1() v1beta1.Interface
-}
 
 type group struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -37,11 +33,11 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) security.Interface {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // V1beta1 returns a new v1beta1.Interface.
 func (g *group) V1beta1() v1beta1.Interface {
-	return v1beta1.New(g.factory, g.namespaces, g.tweakListOptions)
+	return securityv1beta1.New(g.factory, g.namespaces, g.tweakListOptions)
 }

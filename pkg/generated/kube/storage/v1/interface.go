@@ -19,23 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
+	v1 "k8s.io/client-go/informers/storage/v1"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// CSIDrivers returns a CSIDriverInformer.
-	CSIDrivers() CSIDriverInformer
-	// CSINodes returns a CSINodeInformer.
-	CSINodes() CSINodeInformer
-	// CSIStorageCapacities returns a CSIStorageCapacityInformer.
-	CSIStorageCapacities() CSIStorageCapacityInformer
-	// StorageClasses returns a StorageClassInformer.
-	StorageClasses() StorageClassInformer
-	// VolumeAttachments returns a VolumeAttachmentInformer.
-	VolumeAttachments() VolumeAttachmentInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -44,31 +31,31 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // CSIDrivers returns a CSIDriverInformer.
-func (v *version) CSIDrivers() CSIDriverInformer {
+func (v *version) CSIDrivers() v1.CSIDriverInformer {
 	return &cSIDriverInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // CSINodes returns a CSINodeInformer.
-func (v *version) CSINodes() CSINodeInformer {
+func (v *version) CSINodes() v1.CSINodeInformer {
 	return &cSINodeInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // CSIStorageCapacities returns a CSIStorageCapacityInformer.
-func (v *version) CSIStorageCapacities() CSIStorageCapacityInformer {
+func (v *version) CSIStorageCapacities() v1.CSIStorageCapacityInformer {
 	return &cSIStorageCapacityInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // StorageClasses returns a StorageClassInformer.
-func (v *version) StorageClasses() StorageClassInformer {
+func (v *version) StorageClasses() v1.StorageClassInformer {
 	return &storageClassInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // VolumeAttachments returns a VolumeAttachmentInformer.
-func (v *version) VolumeAttachments() VolumeAttachmentInformer {
+func (v *version) VolumeAttachments() v1.VolumeAttachmentInformer {
 	return &volumeAttachmentInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

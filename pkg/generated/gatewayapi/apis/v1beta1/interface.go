@@ -19,21 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/gatewayapi/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
+	internalinterfaces "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// Gateways returns a GatewayInformer.
-	Gateways() GatewayInformer
-	// GatewayClasses returns a GatewayClassInformer.
-	GatewayClasses() GatewayClassInformer
-	// HTTPRoutes returns a HTTPRouteInformer.
-	HTTPRoutes() HTTPRouteInformer
-	// ReferenceGrants returns a ReferenceGrantInformer.
-	ReferenceGrants() ReferenceGrantInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -42,26 +31,26 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1beta1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // Gateways returns a GatewayInformer.
-func (v *version) Gateways() GatewayInformer {
+func (v *version) Gateways() v1beta1.GatewayInformer {
 	return &gatewayInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // GatewayClasses returns a GatewayClassInformer.
-func (v *version) GatewayClasses() GatewayClassInformer {
+func (v *version) GatewayClasses() v1beta1.GatewayClassInformer {
 	return &gatewayClassInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // HTTPRoutes returns a HTTPRouteInformer.
-func (v *version) HTTPRoutes() HTTPRouteInformer {
+func (v *version) HTTPRoutes() v1beta1.HTTPRouteInformer {
 	return &hTTPRouteInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // ReferenceGrants returns a ReferenceGrantInformer.
-func (v *version) ReferenceGrants() ReferenceGrantInformer {
+func (v *version) ReferenceGrants() v1beta1.ReferenceGrantInformer {
 	return &referenceGrantInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }

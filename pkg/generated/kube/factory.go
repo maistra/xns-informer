@@ -23,28 +23,50 @@ import (
 	sync "sync"
 	time "time"
 
-	admissionregistration "github.com/maistra/xns-informer/pkg/generated/kube/admissionregistration"
-	apps "github.com/maistra/xns-informer/pkg/generated/kube/apps"
-	autoscaling "github.com/maistra/xns-informer/pkg/generated/kube/autoscaling"
-	batch "github.com/maistra/xns-informer/pkg/generated/kube/batch"
-	certificates "github.com/maistra/xns-informer/pkg/generated/kube/certificates"
-	coordination "github.com/maistra/xns-informer/pkg/generated/kube/coordination"
-	core "github.com/maistra/xns-informer/pkg/generated/kube/core"
-	discovery "github.com/maistra/xns-informer/pkg/generated/kube/discovery"
-	events "github.com/maistra/xns-informer/pkg/generated/kube/events"
-	extensions "github.com/maistra/xns-informer/pkg/generated/kube/extensions"
-	flowcontrol "github.com/maistra/xns-informer/pkg/generated/kube/flowcontrol"
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
-	networking "github.com/maistra/xns-informer/pkg/generated/kube/networking"
-	node "github.com/maistra/xns-informer/pkg/generated/kube/node"
-	policy "github.com/maistra/xns-informer/pkg/generated/kube/policy"
-	rbac "github.com/maistra/xns-informer/pkg/generated/kube/rbac"
-	scheduling "github.com/maistra/xns-informer/pkg/generated/kube/scheduling"
-	storage "github.com/maistra/xns-informer/pkg/generated/kube/storage"
+	kubeadmissionregistration "github.com/maistra/xns-informer/pkg/generated/kube/admissionregistration"
+	kubeapiserverinternal "github.com/maistra/xns-informer/pkg/generated/kube/apiserverinternal"
+	kubeapps "github.com/maistra/xns-informer/pkg/generated/kube/apps"
+	kubeautoscaling "github.com/maistra/xns-informer/pkg/generated/kube/autoscaling"
+	kubebatch "github.com/maistra/xns-informer/pkg/generated/kube/batch"
+	kubecertificates "github.com/maistra/xns-informer/pkg/generated/kube/certificates"
+	kubecoordination "github.com/maistra/xns-informer/pkg/generated/kube/coordination"
+	kubecore "github.com/maistra/xns-informer/pkg/generated/kube/core"
+	kubediscovery "github.com/maistra/xns-informer/pkg/generated/kube/discovery"
+	kubeevents "github.com/maistra/xns-informer/pkg/generated/kube/events"
+	kubeextensions "github.com/maistra/xns-informer/pkg/generated/kube/extensions"
+	kubeflowcontrol "github.com/maistra/xns-informer/pkg/generated/kube/flowcontrol"
+	kubenetworking "github.com/maistra/xns-informer/pkg/generated/kube/networking"
+	kubenode "github.com/maistra/xns-informer/pkg/generated/kube/node"
+	kubepolicy "github.com/maistra/xns-informer/pkg/generated/kube/policy"
+	kuberbac "github.com/maistra/xns-informer/pkg/generated/kube/rbac"
+	kuberesource "github.com/maistra/xns-informer/pkg/generated/kube/resource"
+	kubescheduling "github.com/maistra/xns-informer/pkg/generated/kube/scheduling"
+	kubestorage "github.com/maistra/xns-informer/pkg/generated/kube/storage"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	clientgoinformers "k8s.io/client-go/informers"
+	admissionregistration "k8s.io/client-go/informers/admissionregistration"
+	apiserverinternal "k8s.io/client-go/informers/apiserverinternal"
+	apps "k8s.io/client-go/informers/apps"
+	autoscaling "k8s.io/client-go/informers/autoscaling"
+	batch "k8s.io/client-go/informers/batch"
+	certificates "k8s.io/client-go/informers/certificates"
+	coordination "k8s.io/client-go/informers/coordination"
+	core "k8s.io/client-go/informers/core"
+	discovery "k8s.io/client-go/informers/discovery"
+	events "k8s.io/client-go/informers/events"
+	extensions "k8s.io/client-go/informers/extensions"
+	flowcontrol "k8s.io/client-go/informers/flowcontrol"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
+	networking "k8s.io/client-go/informers/networking"
+	node "k8s.io/client-go/informers/node"
+	policy "k8s.io/client-go/informers/policy"
+	rbac "k8s.io/client-go/informers/rbac"
+	resource "k8s.io/client-go/informers/resource"
+	scheduling "k8s.io/client-go/informers/scheduling"
+	storage "k8s.io/client-go/informers/storage"
 	kubernetes "k8s.io/client-go/kubernetes"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -64,6 +86,11 @@ type sharedInformerFactory struct {
 	// startedInformers is used for tracking which informers have been started.
 	// This allows Start() to be called multiple times safely.
 	startedInformers map[reflect.Type]bool
+	// wg tracks how many goroutines were started.
+	wg sync.WaitGroup
+	// shuttingDown is true when Shutdown has been called. It may still be running
+	// because it needs to wait for goroutines.
+	shuttingDown bool
 }
 
 // WithCustomResyncConfig sets a custom resync period for the specified informer types.
@@ -125,20 +152,39 @@ func (f *sharedInformerFactory) SetNamespaces(namespaces []string) {
 	f.namespaces.SetNamespaces(namespaces)
 }
 
-// Start initializes all requested informers.
 func (f *sharedInformerFactory) Start(stopCh <-chan struct{}) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
+	if f.shuttingDown {
+		return
+	}
+
 	for informerType, informer := range f.informers {
 		if !f.startedInformers[informerType] {
-			go informer.Run(stopCh)
+			f.wg.Add(1)
+			// We need a new variable in each loop iteration,
+			// otherwise the goroutine would use the loop variable
+			// and that keeps changing.
+			informer := informer
+			go func() {
+				defer f.wg.Done()
+				informer.Run(stopCh)
+			}()
 			f.startedInformers[informerType] = true
 		}
 	}
 }
 
-// WaitForCacheSync waits for all started informers' cache were synced.
+func (f *sharedInformerFactory) Shutdown() {
+	f.lock.Lock()
+	f.shuttingDown = true
+	f.lock.Unlock()
+
+	// Will return immediately if there is nothing to wait for.
+	f.wg.Wait()
+}
+
 func (f *sharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool {
 	informers := func() map[reflect.Type]cache.SharedIndexInformer {
 		f.lock.Lock()
@@ -185,13 +231,62 @@ func (f *sharedInformerFactory) InformerFor(obj runtime.Object, newFunc internal
 
 // SharedInformerFactory provides shared informers for resources in all known
 // API group versions.
+//
+// It is typically used like this:
+//
+//	ctx, cancel := context.Background()
+//	defer cancel()
+//	factory := NewSharedInformerFactory(client, resyncPeriod)
+//	defer factory.WaitForStop()    // Returns immediately if nothing was started.
+//	genericInformer := factory.ForResource(resource)
+//	typedInformer := factory.SomeAPIGroup().V1().SomeType()
+//	factory.Start(ctx.Done())          // Start processing these informers.
+//	synced := factory.WaitForCacheSync(ctx.Done())
+//	for v, ok := range synced {
+//	    if !ok {
+//	        fmt.Fprintf(os.Stderr, "caches failed to sync: %v", v)
+//	        return
+//	    }
+//	}
+//
+//	// Creating informers can also be created after Start, but then
+//	// Start must be called again:
+//	anotherGenericInformer := factory.ForResource(resource)
+//	factory.Start(ctx.Done())
 type SharedInformerFactory interface {
 	internalinterfaces.SharedInformerFactory
+
 	SetNamespaces(namespaces []string)
-	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
+
+	// Start initializes all requested informers. They are handled in goroutines
+	// which run until the stop channel gets closed.
+	Start(stopCh <-chan struct{})
+
+	// Shutdown marks a factory as shutting down. At that point no new
+	// informers can be started anymore and Start will return without
+	// doing anything.
+	//
+	// In addition, Shutdown blocks until all goroutines have terminated. For that
+	// to happen, the close channel(s) that they were started with must be closed,
+	// either before Shutdown gets called or while it is waiting.
+	//
+	// Shutdown may be called multiple times, even concurrently. All such calls will
+	// block until all goroutines have terminated.
+	Shutdown()
+
+	// WaitForCacheSync blocks until all started informers' caches were synced
+	// or the stop channel gets closed.
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	// ForResource gives generic access to a shared informer of the matching type.
+	ForResource(resource schema.GroupVersionResource) (clientgoinformers.GenericInformer, error)
+
+	// InternalInformerFor returns the SharedIndexInformer for obj using an internal
+	// client.
+	InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer
+
 	Admissionregistration() admissionregistration.Interface
+	Internal() apiserverinternal.Interface
 	Apps() apps.Interface
 	Autoscaling() autoscaling.Interface
 	Batch() batch.Interface
@@ -206,74 +301,83 @@ type SharedInformerFactory interface {
 	Node() node.Interface
 	Policy() policy.Interface
 	Rbac() rbac.Interface
+	Resource() resource.Interface
 	Scheduling() scheduling.Interface
 	Storage() storage.Interface
 }
 
 func (f *sharedInformerFactory) Admissionregistration() admissionregistration.Interface {
-	return admissionregistration.New(f, f.namespaces, f.tweakListOptions)
+	return kubeadmissionregistration.New(f, f.namespaces, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Internal() apiserverinternal.Interface {
+	return kubeapiserverinternal.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Apps() apps.Interface {
-	return apps.New(f, f.namespaces, f.tweakListOptions)
+	return kubeapps.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Autoscaling() autoscaling.Interface {
-	return autoscaling.New(f, f.namespaces, f.tweakListOptions)
+	return kubeautoscaling.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Batch() batch.Interface {
-	return batch.New(f, f.namespaces, f.tweakListOptions)
+	return kubebatch.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Certificates() certificates.Interface {
-	return certificates.New(f, f.namespaces, f.tweakListOptions)
+	return kubecertificates.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Coordination() coordination.Interface {
-	return coordination.New(f, f.namespaces, f.tweakListOptions)
+	return kubecoordination.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Core() core.Interface {
-	return core.New(f, f.namespaces, f.tweakListOptions)
+	return kubecore.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Discovery() discovery.Interface {
-	return discovery.New(f, f.namespaces, f.tweakListOptions)
+	return kubediscovery.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Events() events.Interface {
-	return events.New(f, f.namespaces, f.tweakListOptions)
+	return kubeevents.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Extensions() extensions.Interface {
-	return extensions.New(f, f.namespaces, f.tweakListOptions)
+	return kubeextensions.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Flowcontrol() flowcontrol.Interface {
-	return flowcontrol.New(f, f.namespaces, f.tweakListOptions)
+	return kubeflowcontrol.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Networking() networking.Interface {
-	return networking.New(f, f.namespaces, f.tweakListOptions)
+	return kubenetworking.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Node() node.Interface {
-	return node.New(f, f.namespaces, f.tweakListOptions)
+	return kubenode.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Policy() policy.Interface {
-	return policy.New(f, f.namespaces, f.tweakListOptions)
+	return kubepolicy.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Rbac() rbac.Interface {
-	return rbac.New(f, f.namespaces, f.tweakListOptions)
+	return kuberbac.New(f, f.namespaces, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Resource() resource.Interface {
+	return kuberesource.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Scheduling() scheduling.Interface {
-	return scheduling.New(f, f.namespaces, f.tweakListOptions)
+	return kubescheduling.New(f, f.namespaces, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Storage() storage.Interface {
-	return storage.New(f, f.namespaces, f.tweakListOptions)
+	return kubestorage.New(f, f.namespaces, f.tweakListOptions)
 }

@@ -19,21 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
+	v1 "k8s.io/client-go/informers/rbac/v1"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// ClusterRoles returns a ClusterRoleInformer.
-	ClusterRoles() ClusterRoleInformer
-	// ClusterRoleBindings returns a ClusterRoleBindingInformer.
-	ClusterRoleBindings() ClusterRoleBindingInformer
-	// Roles returns a RoleInformer.
-	Roles() RoleInformer
-	// RoleBindings returns a RoleBindingInformer.
-	RoleBindings() RoleBindingInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -42,26 +31,26 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // ClusterRoles returns a ClusterRoleInformer.
-func (v *version) ClusterRoles() ClusterRoleInformer {
+func (v *version) ClusterRoles() v1.ClusterRoleInformer {
 	return &clusterRoleInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // ClusterRoleBindings returns a ClusterRoleBindingInformer.
-func (v *version) ClusterRoleBindings() ClusterRoleBindingInformer {
+func (v *version) ClusterRoleBindings() v1.ClusterRoleBindingInformer {
 	return &clusterRoleBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // Roles returns a RoleInformer.
-func (v *version) Roles() RoleInformer {
+func (v *version) Roles() v1.RoleInformer {
 	return &roleInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // RoleBindings returns a RoleBindingInformer.
-func (v *version) RoleBindings() RoleBindingInformer {
+func (v *version) RoleBindings() v1.RoleBindingInformer {
 	return &roleBindingInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }

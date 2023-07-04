@@ -22,10 +22,10 @@ import (
 	"context"
 	time "time"
 
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/istio/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	telemetryv1alpha1 "istio.io/client-go/pkg/apis/telemetry/v1alpha1"
 	versioned "istio.io/client-go/pkg/clientset/versioned"
+	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
 	v1alpha1 "istio.io/client-go/pkg/listers/telemetry/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"

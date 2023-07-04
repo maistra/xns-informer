@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//nolint:lll
 package generators
 
 import (
@@ -34,6 +35,8 @@ type groupInterfaceGenerator struct {
 	imports                   namer.ImportTracker
 	groupVersions             clientgentypes.GroupVersions
 	filtered                  bool
+	generateGroupInterface    bool
+	groupInterfacePackage     string
 	internalInterfacesPackage string
 }
 
@@ -70,27 +73,31 @@ func (g *groupInterfaceGenerator) GenerateType(c *generator.Context, t *types.Ty
 	versions := make([]versionData, 0, len(g.groupVersions.Versions))
 	for _, version := range g.groupVersions.Versions {
 		gv := clientgentypes.GroupVersion{Group: g.groupVersions.Group, Version: version.Version}
-		versionPackage := filepath.Join(g.outputPackage, strings.ToLower(gv.Version.NonEmpty()))
-		iface := c.Universe.Type(types.Name{Package: versionPackage, Name: "Interface"})
+		interfacePackage := filepath.Join(g.groupInterfacePackage, strings.ToLower(gv.Version.NonEmpty()))
+		newPackage := filepath.Join(g.outputPackage, strings.ToLower(gv.Version.NonEmpty()))
 		versions = append(versions, versionData{
 			Name:      namer.IC(version.Version.NonEmpty()),
-			Interface: iface,
-			New:       c.Universe.Function(types.Name{Package: versionPackage, Name: "New"}),
+			Interface: c.Universe.Type(types.Name{Package: interfacePackage, Name: "Interface"}),
+			New:       c.Universe.Function(types.Name{Package: newPackage, Name: "New"}),
 		})
 	}
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
+		"newInterface":                    c.Universe.Type(types.Name{Package: g.groupInterfacePackage, Name: "Interface"}),
 		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "TweakListOptionsFunc"}),
 		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "SharedInformerFactory"}),
 		"versions":                        versions,
 	}
 
+	if g.generateGroupInterface {
+		sw.Do(groupInterfaceTemplate, m)
+	}
 	sw.Do(groupTemplate, m)
 
 	return sw.Error()
 }
 
-var groupTemplate = `
+var groupInterfaceTemplate = `
 // Interface provides access to each of this group's versions.
 type Interface interface {
 	$range .versions -$
@@ -98,7 +105,9 @@ type Interface interface {
 		$.Name$() $.Interface|raw$
 	$end$
 }
+`
 
+var groupTemplate = `
 type group struct {
 	factory $.interfacesSharedInformerFactory|raw$
     namespaces $.xnsNamespaceSet|raw$
@@ -106,7 +115,7 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f $.interfacesSharedInformerFactory|raw$, namespaces $.xnsNamespaceSet|raw$, tweakListOptions $.interfacesTweakListOptionsFunc|raw$) Interface {
+func New(f $.interfacesSharedInformerFactory|raw$, namespaces $.xnsNamespaceSet|raw$, tweakListOptions $.interfacesTweakListOptionsFunc|raw$) $.newInterface|raw$ {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 

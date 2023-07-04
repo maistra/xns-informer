@@ -22,7 +22,6 @@ import (
 	"context"
 	time "time"
 
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/gatewayapi/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -30,6 +29,7 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 	apisv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	versioned "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	internalinterfaces "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces"
 	v1alpha2 "sigs.k8s.io/gateway-api/pkg/client/listers/apis/v1alpha2"
 )
 

@@ -31,13 +31,15 @@ import (
 // genericGenerator generates the generic informer.
 type genericGenerator struct {
 	generator.DefaultGen
-	outputPackage        string
-	imports              namer.ImportTracker
-	groupVersions        map[string]clientgentypes.GroupVersions
-	groupGoNames         map[string]string
-	pluralExceptions     map[string]string
-	typesForGroupVersion map[clientgentypes.GroupVersion][]*types.Type
-	filtered             bool
+	outputPackage           string
+	informersPackage        string
+	imports                 namer.ImportTracker
+	groupVersions           map[string]clientgentypes.GroupVersions
+	groupGoNames            map[string]string
+	pluralExceptions        map[string]string
+	typesForGroupVersion    map[clientgentypes.GroupVersion][]*types.Type
+	filtered                bool
+	generateGenericInformer bool
 }
 
 var _ generator.Generator = &genericGenerator{}
@@ -131,15 +133,19 @@ func (g *genericGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"schemeGVs":                  schemeGVs,
 		"schemaGroupResource":        c.Universe.Type(schemaGroupResource),
 		"schemaGroupVersionResource": c.Universe.Type(schemaGroupVersionResource),
+		"genericInformer":            c.Universe.Type(types.Name{Package: g.informersPackage, Name: "GenericInformer"}),
 	}
 
+	if g.generateGenericInformer {
+		sw.Do(genericInformerInterface, m)
+	}
 	sw.Do(genericInformer, m)
 	sw.Do(forResource, m)
 
 	return sw.Error()
 }
 
-var genericInformer = `
+var genericInformerInterface = `
 // GenericInformer is type of SharedIndexInformer which will locate and delegate to other
 // sharedInformers based on type
 type GenericInformer interface {
@@ -147,6 +153,9 @@ type GenericInformer interface {
 	Lister() {{.cacheGenericLister|raw}}
 }
 
+`
+
+var genericInformer = `
 type genericInformer struct {
 	informer {{.cacheSharedIndexInformer|raw}}
 	resource {{.schemaGroupResource|raw}}
@@ -166,7 +175,7 @@ func (f *genericInformer) Lister() {{.cacheGenericLister|raw}} {
 var forResource = `
 // ForResource gives generic access to a shared informer of the matching type
 // TODO extend this to unknown resources with a client pool
-func (f *sharedInformerFactory) ForResource(resource {{.schemaGroupVersionResource|raw}}) (GenericInformer, error) {
+func (f *sharedInformerFactory) ForResource(resource {{.schemaGroupVersionResource|raw}}) ({{.genericInformer|raw}}, error) {
 	switch resource {
 		{{range $group := .groups -}}{{$GroupGoName := .GroupGoName -}}
 			{{range $version := .Versions -}}

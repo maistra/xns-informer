@@ -19,17 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
+	v1alpha1 "k8s.io/client-go/informers/storage/v1alpha1"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// CSIStorageCapacities returns a CSIStorageCapacityInformer.
-	CSIStorageCapacities() CSIStorageCapacityInformer
-	// VolumeAttachments returns a VolumeAttachmentInformer.
-	VolumeAttachments() VolumeAttachmentInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -38,16 +31,16 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1alpha1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // CSIStorageCapacities returns a CSIStorageCapacityInformer.
-func (v *version) CSIStorageCapacities() CSIStorageCapacityInformer {
+func (v *version) CSIStorageCapacities() v1alpha1.CSIStorageCapacityInformer {
 	return &cSIStorageCapacityInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // VolumeAttachments returns a VolumeAttachmentInformer.
-func (v *version) VolumeAttachments() VolumeAttachmentInformer {
+func (v *version) VolumeAttachments() v1alpha1.VolumeAttachmentInformer {
 	return &volumeAttachmentInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

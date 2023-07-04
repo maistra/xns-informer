@@ -19,15 +19,10 @@ limitations under the License.
 package v2beta2
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	v2beta2 "k8s.io/client-go/informers/autoscaling/v2beta2"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// HorizontalPodAutoscalers returns a HorizontalPodAutoscalerInformer.
-	HorizontalPodAutoscalers() HorizontalPodAutoscalerInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -36,11 +31,11 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v2beta2.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // HorizontalPodAutoscalers returns a HorizontalPodAutoscalerInformer.
-func (v *version) HorizontalPodAutoscalers() HorizontalPodAutoscalerInformer {
+func (v *version) HorizontalPodAutoscalers() v2beta2.HorizontalPodAutoscalerInformer {
 	return &horizontalPodAutoscalerInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }

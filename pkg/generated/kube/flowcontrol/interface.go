@@ -19,16 +19,18 @@ limitations under the License.
 package flowcontrol
 
 import (
-	v1alpha1 "github.com/maistra/xns-informer/pkg/generated/kube/flowcontrol/v1alpha1"
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
+	flowcontrolv1alpha1 "github.com/maistra/xns-informer/pkg/generated/kube/flowcontrol/v1alpha1"
+	flowcontrolv1beta1 "github.com/maistra/xns-informer/pkg/generated/kube/flowcontrol/v1beta1"
+	flowcontrolv1beta2 "github.com/maistra/xns-informer/pkg/generated/kube/flowcontrol/v1beta2"
+	flowcontrolv1beta3 "github.com/maistra/xns-informer/pkg/generated/kube/flowcontrol/v1beta3"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	flowcontrol "k8s.io/client-go/informers/flowcontrol"
+	v1alpha1 "k8s.io/client-go/informers/flowcontrol/v1alpha1"
+	v1beta1 "k8s.io/client-go/informers/flowcontrol/v1beta1"
+	v1beta2 "k8s.io/client-go/informers/flowcontrol/v1beta2"
+	v1beta3 "k8s.io/client-go/informers/flowcontrol/v1beta3"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 )
-
-// Interface provides access to each of this group's versions.
-type Interface interface {
-	// V1alpha1 provides access to shared informers for resources in V1alpha1.
-	V1alpha1() v1alpha1.Interface
-}
 
 type group struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -37,11 +39,26 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) flowcontrol.Interface {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // V1alpha1 returns a new v1alpha1.Interface.
 func (g *group) V1alpha1() v1alpha1.Interface {
-	return v1alpha1.New(g.factory, g.namespaces, g.tweakListOptions)
+	return flowcontrolv1alpha1.New(g.factory, g.namespaces, g.tweakListOptions)
+}
+
+// V1beta1 returns a new v1beta1.Interface.
+func (g *group) V1beta1() v1beta1.Interface {
+	return flowcontrolv1beta1.New(g.factory, g.namespaces, g.tweakListOptions)
+}
+
+// V1beta2 returns a new v1beta2.Interface.
+func (g *group) V1beta2() v1beta2.Interface {
+	return flowcontrolv1beta2.New(g.factory, g.namespaces, g.tweakListOptions)
+}
+
+// V1beta3 returns a new v1beta3.Interface.
+func (g *group) V1beta3() v1beta3.Interface {
+	return flowcontrolv1beta3.New(g.factory, g.namespaces, g.tweakListOptions)
 }

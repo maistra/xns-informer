@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//nolint:lll
 package generators
 
 import (
@@ -29,10 +30,12 @@ import (
 type versionInterfaceGenerator struct {
 	generator.DefaultGen
 	outputPackage             string
+	groupVersionPackage       string
+	generateVersionInterface  bool
+	internalInterfacesPackage string
 	imports                   namer.ImportTracker
 	types                     []*types.Type
 	filtered                  bool
-	internalInterfacesPackage string
 }
 
 var _ generator.Generator = &versionInterfaceGenerator{}
@@ -61,11 +64,15 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 
 	m := map[string]interface{}{
 		"xnsNamespaceSet":                 c.Universe.Type(xnsNamespaceSet),
+		"informersInterface":              c.Universe.Type(types.Name{Package: g.groupVersionPackage, Name: "Interface"}),
 		"interfacesTweakListOptionsFunc":  c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "TweakListOptionsFunc"}),
 		"interfacesSharedInformerFactory": c.Universe.Type(types.Name{Package: g.internalInterfacesPackage, Name: "SharedInformerFactory"}),
 		"types":                           g.types,
 	}
 
+	if g.generateVersionInterface {
+		sw.Do(versionInterfaceTemplate, m)
+	}
 	sw.Do(versionTemplate, m)
 	for _, typeDef := range g.types {
 		tags, err := util.ParseClientGenTags(append(typeDef.SecondClosestCommentLines, typeDef.CommentLines...))
@@ -74,13 +81,14 @@ func (g *versionInterfaceGenerator) GenerateType(c *generator.Context, t *types.
 		}
 		m["namespaced"] = !tags.NonNamespaced
 		m["type"] = typeDef
+		m["versionedType"] = c.Universe.Type(types.Name{Package: g.groupVersionPackage, Name: typeDef.Name.Name})
 		sw.Do(versionFuncTemplate, m)
 	}
 
 	return sw.Error()
 }
 
-var versionTemplate = `
+var versionInterfaceTemplate = `
 // Interface provides access to all the informers in this group version.
 type Interface interface {
 	$range .types -$
@@ -88,7 +96,9 @@ type Interface interface {
 		$.|publicPlural$() $.|public$Informer
 	$end$
 }
+`
 
+var versionTemplate = `
 type version struct {
 	factory $.interfacesSharedInformerFactory|raw$
     namespaces $.xnsNamespaceSet|raw$
@@ -96,14 +106,14 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f $.interfacesSharedInformerFactory|raw$, namespaces $.xnsNamespaceSet|raw$, tweakListOptions $.interfacesTweakListOptionsFunc|raw$) Interface {
+func New(f $.interfacesSharedInformerFactory|raw$, namespaces $.xnsNamespaceSet|raw$, tweakListOptions $.interfacesTweakListOptionsFunc|raw$) $.informersInterface|raw$ {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 `
 
 var versionFuncTemplate = `
 // $.type|publicPlural$ returns a $.type|public$Informer.
-func (v *version) $.type|publicPlural$() $.type|public$Informer {
+func (v *version) $.type|publicPlural$() $.versionedType|raw$Informer {
 	return &$.type|private$Informer{factory: v.factory$if .namespaced$, namespaces: v.namespaces$end$, tweakListOptions: v.tweakListOptions}
 }
 `

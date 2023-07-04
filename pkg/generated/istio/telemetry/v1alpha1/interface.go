@@ -19,15 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/istio/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
+	v1alpha1 "istio.io/client-go/pkg/informers/externalversions/telemetry/v1alpha1"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// Telemetries returns a TelemetryInformer.
-	Telemetries() TelemetryInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -36,11 +31,11 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1alpha1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // Telemetries returns a TelemetryInformer.
-func (v *version) Telemetries() TelemetryInformer {
+func (v *version) Telemetries() v1alpha1.TelemetryInformer {
 	return &telemetryInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }

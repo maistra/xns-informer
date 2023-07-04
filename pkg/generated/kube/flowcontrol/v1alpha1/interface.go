@@ -19,17 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	v1alpha1 "k8s.io/client-go/informers/flowcontrol/v1alpha1"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// FlowSchemas returns a FlowSchemaInformer.
-	FlowSchemas() FlowSchemaInformer
-	// PriorityLevelConfigurations returns a PriorityLevelConfigurationInformer.
-	PriorityLevelConfigurations() PriorityLevelConfigurationInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -38,16 +31,16 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1alpha1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // FlowSchemas returns a FlowSchemaInformer.
-func (v *version) FlowSchemas() FlowSchemaInformer {
+func (v *version) FlowSchemas() v1alpha1.FlowSchemaInformer {
 	return &flowSchemaInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // PriorityLevelConfigurations returns a PriorityLevelConfigurationInformer.
-func (v *version) PriorityLevelConfigurations() PriorityLevelConfigurationInformer {
+func (v *version) PriorityLevelConfigurations() v1alpha1.PriorityLevelConfigurationInformer {
 	return &priorityLevelConfigurationInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

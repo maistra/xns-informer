@@ -32,6 +32,7 @@ import (
 type factoryGenerator struct {
 	generator.DefaultGen
 	outputPackage             string
+	informersPackage          string
 	imports                   namer.ImportTracker
 	groupVersions             map[string]clientgentypes.GroupVersions
 	gvGoNames                 map[string]string
@@ -70,7 +71,7 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 	gvInterfaces := make(map[string]*types.Type)
 	gvNewFuncs := make(map[string]*types.Type)
 	for groupPkgName := range g.groupVersions {
-		gvInterfaces[groupPkgName] = c.Universe.Type(types.Name{Package: path.Join(g.outputPackage, groupPkgName), Name: "Interface"})
+		gvInterfaces[groupPkgName] = c.Universe.Type(types.Name{Package: path.Join(g.informersPackage, groupPkgName), Name: "Interface"})
 		gvNewFuncs[groupPkgName] = c.Universe.Function(types.Name{Package: path.Join(g.outputPackage, groupPkgName), Name: "New"})
 	}
 	m := map[string]interface{}{
@@ -92,6 +93,7 @@ func (g *factoryGenerator) GenerateType(c *generator.Context, t *types.Type, w i
 		"object":                         c.Universe.Type(metav1Object),
 		"xnsNamespaceSet":                c.Universe.Type(xnsNamespaceSet),
 		"xnsNewNamespaceSet":             c.Universe.Type(xnsNewNamespaceSet),
+		"genericInformer":                c.Universe.Type(types.Name{Package: g.informersPackage, Name: "GenericInformer"}),
 	}
 
 	sw.Do(sharedInformerFactoryStruct, m)
@@ -116,6 +118,11 @@ type sharedInformerFactory struct {
 	// startedInformers is used for tracking which informers have been started.
 	// This allows Start() to be called multiple times safely.
 	startedInformers map[{{.reflectType|raw}}]bool
+	// wg tracks how many goroutines were started.
+	wg sync.WaitGroup
+	// shuttingDown is true when Shutdown has been called. It may still be running
+	// because it needs to wait for goroutines.
+	shuttingDown bool
 }
 
 // WithCustomResyncConfig sets a custom resync period for the specified informer types.
@@ -177,39 +184,59 @@ func (f *sharedInformerFactory) SetNamespaces(namespaces []string) {
     f.namespaces.SetNamespaces(namespaces)
 }
 
-// Start initializes all requested informers.
 func (f *sharedInformerFactory) Start(stopCh <-chan struct{}) {
-  f.lock.Lock()
-  defer f.lock.Unlock()
+	f.lock.Lock()
+	defer f.lock.Unlock()
 
-  for informerType, informer := range f.informers {
-    if !f.startedInformers[informerType] {
-      go informer.Run(stopCh)
-      f.startedInformers[informerType] = true
-    }
-  }
+	if f.shuttingDown {
+		return
+	}
+
+	for informerType, informer := range f.informers {
+		if !f.startedInformers[informerType] {
+			f.wg.Add(1)
+			// We need a new variable in each loop iteration,
+			// otherwise the goroutine would use the loop variable
+			// and that keeps changing.
+			informer := informer
+			go func() {
+				defer f.wg.Done()
+				informer.Run(stopCh)
+			}()
+			f.startedInformers[informerType] = true
+		}
+	}
 }
 
-// WaitForCacheSync waits for all started informers' cache were synced.
+func (f *sharedInformerFactory) Shutdown() {
+	f.lock.Lock()
+	f.shuttingDown = true
+	f.lock.Unlock()
+
+
+	// Will return immediately if there is nothing to wait for.
+	f.wg.Wait()
+}
+
 func (f *sharedInformerFactory) WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool {
-	informers := func()map[reflect.Type]cache.SharedIndexInformer{
-               f.lock.Lock()
-               defer f.lock.Unlock()
+        informers := func()map[reflect.Type]cache.SharedIndexInformer{
+                f.lock.Lock()
+                defer f.lock.Unlock()
 
-               informers := map[reflect.Type]cache.SharedIndexInformer{}
-               for informerType, informer := range f.informers {
-                       if f.startedInformers[informerType] {
-                               informers[informerType] = informer
-                       }
-               }
-               return informers
-       }()
+                informers := map[reflect.Type]cache.SharedIndexInformer{}
+                for informerType, informer := range f.informers {
+                        if f.startedInformers[informerType] {
+                                informers[informerType] = informer
+                        }
+                }
+                return informers
+        }()
 
-       res := map[reflect.Type]bool{}
-       for informType, informer := range informers {
-               res[informType] = cache.WaitForCacheSync(stopCh, informer.HasSynced)
-       }
-       return res
+        res := map[reflect.Type]bool{}
+        for informType, informer := range informers {
+                res[informType] = cache.WaitForCacheSync(stopCh, informer.HasSynced)
+        }
+        return res
 }
 
 // InternalInformerFor returns the SharedIndexInformer for obj using an internal
@@ -240,11 +267,59 @@ func (f *sharedInformerFactory) InformerFor(obj {{.runtimeObject|raw}}, newFunc 
 var sharedInformerFactoryInterface = `
 // SharedInformerFactory provides shared informers for resources in all known
 // API group versions.
+//
+// It is typically used like this:
+//
+//   ctx, cancel := context.Background()
+//   defer cancel()
+//   factory := NewSharedInformerFactory(client, resyncPeriod)
+//   defer factory.WaitForStop()    // Returns immediately if nothing was started.
+//   genericInformer := factory.ForResource(resource)
+//   typedInformer := factory.SomeAPIGroup().V1().SomeType()
+//   factory.Start(ctx.Done())          // Start processing these informers.
+//   synced := factory.WaitForCacheSync(ctx.Done())
+//   for v, ok := range synced {
+//       if !ok {
+//           fmt.Fprintf(os.Stderr, "caches failed to sync: %v", v)
+//           return
+//       }
+//   }
+//
+//   // Creating informers can also be created after Start, but then
+//   // Start must be called again:
+//   anotherGenericInformer := factory.ForResource(resource)
+//   factory.Start(ctx.Done())
 type SharedInformerFactory interface {
 	{{.informerFactoryInterface|raw}}
-    SetNamespaces(namespaces []string)
-	ForResource(resource {{.schemaGroupVersionResource|raw}}) (GenericInformer, error)
+
+	SetNamespaces(namespaces []string)
+
+	// Start initializes all requested informers. They are handled in goroutines
+	// which run until the stop channel gets closed.
+	Start(stopCh <-chan struct{})
+
+	// Shutdown marks a factory as shutting down. At that point no new
+	// informers can be started anymore and Start will return without
+	// doing anything.
+	//
+	// In addition, Shutdown blocks until all goroutines have terminated. For that
+	// to happen, the close channel(s) that they were started with must be closed,
+	// either before Shutdown gets called or while it is waiting.
+	//
+	// Shutdown may be called multiple times, even concurrently. All such calls will
+	// block until all goroutines have terminated.
+	Shutdown()
+
+	// WaitForCacheSync blocks until all started informers' caches were synced
+	// or the stop channel gets closed.
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
+
+	// ForResource gives generic access to a shared informer of the matching type.
+	ForResource(resource {{.schemaGroupVersionResource|raw}}) ({{.genericInformer|raw}}, error)
+
+	// InternalInformerFor returns the SharedIndexInformer for obj using an internal
+	// client.
+	InformerFor(obj {{.runtimeObject|raw}}, newFunc {{.interfacesNewInformerFunc|raw}}) {{.cacheSharedIndexInformer|raw}}
 
 	{{$gvInterfaces := .gvInterfaces}}
 	{{$gvGoNames := .gvGoNames}}

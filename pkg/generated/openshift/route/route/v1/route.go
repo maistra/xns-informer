@@ -22,10 +22,10 @@ import (
 	"context"
 	time "time"
 
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/openshift/route/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	routev1 "github.com/openshift/api/route/v1"
 	versioned "github.com/openshift/client-go/route/clientset/versioned"
+	internalinterfaces "github.com/openshift/client-go/route/informers/externalversions/internalinterfaces"
 	v1 "github.com/openshift/client-go/route/listers/route/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"

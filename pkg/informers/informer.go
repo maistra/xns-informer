@@ -48,6 +48,8 @@ type multiNamespaceInformer struct {
 	stopped       bool
 	namespaces    NamespaceSet
 	newInformer   NewInformerFunc
+
+	registrationHandlers map[string]cache.ResourceEventHandlerRegistration
 }
 
 var _ cache.SharedIndexInformer = &multiNamespaceInformer{}
@@ -64,6 +66,8 @@ func NewMultiNamespaceInformer(namespaces NamespaceSet, resync time.Duration, ne
 		namespaces:    namespaces,
 		resyncPeriod:  resync,
 		newInformer:   newInformer,
+
+		registrationHandlers: make(map[string]cache.ResourceEventHandlerRegistration),
 	}
 
 	namespaces.AddHandler(NamespaceSetHandlerFuncs{
@@ -136,13 +140,14 @@ func (i *multiNamespaceInformer) AddNamespace(namespace string) {
 
 	// Add event handlers to the new informer.
 	for _, handler := range i.eventHandlers {
-		_, err := informer.AddEventHandlerWithResyncPeriod(
+		r, err := informer.AddEventHandlerWithResyncPeriod(
 			handler.handler,
 			handler.resyncPeriod,
 		)
 		if err != nil {
 			klog.Errorf("Failed to add event handler for namespace %q: %v", namespace, err)
 		}
+		i.registrationHandlers[namespace] = r
 	}
 
 	// Add watch error handler.
@@ -194,6 +199,11 @@ func (i *multiNamespaceInformer) RemoveNamespace(namespace string) {
 
 // Run starts all informers and waits for the stop channel to close.
 func (i *multiNamespaceInformer) Run(stopCh <-chan struct{}) {
+	if i.hasStarted() {
+		klog.Warningf("The multiNamespaceInformer has started, run more than once is not allowed")
+		return
+	}
+
 	func() {
 		i.lock.Lock()
 		defer i.lock.Unlock()
@@ -211,13 +221,17 @@ func (i *multiNamespaceInformer) Run(stopCh <-chan struct{}) {
 	defer i.lock.Unlock()
 
 	for namespace := range i.informers {
-		// Close and recreate the channel.
 		close(i.stopChans[namespace])
-		i.stopChans[namespace] = make(chan struct{})
 	}
 
-	i.started = false
 	i.stopped = true
+}
+
+func (i *multiNamespaceInformer) hasStarted() bool {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
+	return i.started
 }
 
 // AddEventHandler adds the given handler to each namespaced informer.
@@ -241,11 +255,12 @@ func (i *multiNamespaceInformer) AddEventHandlerWithResyncPeriod(
 		resyncPeriod: resyncPeriod,
 	})
 
-	for _, informer := range i.informers {
-		_, err := informer.AddEventHandlerWithResyncPeriod(handler, resyncPeriod)
+	for ns, informer := range i.informers {
+		r, err := informer.AddEventHandlerWithResyncPeriod(handler, resyncPeriod)
 		if err != nil {
 			return nil, err
 		}
+		i.registrationHandlers[ns] = r
 	}
 	return i, nil
 }
@@ -307,12 +322,16 @@ func (i *multiNamespaceInformer) SetTransform(handler cache.TransformFunc) error
 	return errors.NewAggregate(errList)
 }
 
-func (i *multiNamespaceInformer) RemoveEventHandler(handle cache.ResourceEventHandlerRegistration) error {
+func (i *multiNamespaceInformer) RemoveEventHandler(_ cache.ResourceEventHandlerRegistration) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	for _, inf := range i.informers {
-		if err := inf.RemoveEventHandler(handle); err != nil {
+	for ns, inf := range i.informers {
+		r, found := i.registrationHandlers[ns]
+		if !found {
+			continue
+		}
+		if err := inf.RemoveEventHandler(r); err != nil {
 			return err
 		}
 	}

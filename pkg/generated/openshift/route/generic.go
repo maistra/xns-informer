@@ -22,16 +22,10 @@ import (
 	"fmt"
 
 	v1 "github.com/openshift/api/route/v1"
+	externalversions "github.com/openshift/client-go/route/informers/externalversions"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
-
-// GenericInformer is type of SharedIndexInformer which will locate and delegate to other
-// sharedInformers based on type
-type GenericInformer interface {
-	Informer() cache.SharedIndexInformer
-	Lister() cache.GenericLister
-}
 
 type genericInformer struct {
 	informer cache.SharedIndexInformer
@@ -50,7 +44,7 @@ func (f *genericInformer) Lister() cache.GenericLister {
 
 // ForResource gives generic access to a shared informer of the matching type
 // TODO extend this to unknown resources with a client pool
-func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
+func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (externalversions.GenericInformer, error) {
 	switch resource {
 	// Group=route.openshift.io, Version=v1
 	case v1.SchemeGroupVersion.WithResource("routes"):

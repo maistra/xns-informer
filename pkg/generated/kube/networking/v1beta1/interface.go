@@ -19,17 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
+	v1beta1 "k8s.io/client-go/informers/networking/v1beta1"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// Ingresses returns a IngressInformer.
-	Ingresses() IngressInformer
-	// IngressClasses returns a IngressClassInformer.
-	IngressClasses() IngressClassInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -38,16 +31,16 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1beta1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // Ingresses returns a IngressInformer.
-func (v *version) Ingresses() IngressInformer {
+func (v *version) Ingresses() v1beta1.IngressInformer {
 	return &ingressInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // IngressClasses returns a IngressClassInformer.
-func (v *version) IngressClasses() IngressClassInformer {
+func (v *version) IngressClasses() v1beta1.IngressClassInformer {
 	return &ingressClassInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

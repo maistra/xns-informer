@@ -19,17 +19,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/kube/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
+	v1beta1 "k8s.io/client-go/informers/policy/v1beta1"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// PodDisruptionBudgets returns a PodDisruptionBudgetInformer.
-	PodDisruptionBudgets() PodDisruptionBudgetInformer
-	// PodSecurityPolicies returns a PodSecurityPolicyInformer.
-	PodSecurityPolicies() PodSecurityPolicyInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -38,16 +31,16 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1beta1.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // PodDisruptionBudgets returns a PodDisruptionBudgetInformer.
-func (v *version) PodDisruptionBudgets() PodDisruptionBudgetInformer {
+func (v *version) PodDisruptionBudgets() v1beta1.PodDisruptionBudgetInformer {
 	return &podDisruptionBudgetInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // PodSecurityPolicies returns a PodSecurityPolicyInformer.
-func (v *version) PodSecurityPolicies() PodSecurityPolicyInformer {
+func (v *version) PodSecurityPolicies() v1beta1.PodSecurityPolicyInformer {
 	return &podSecurityPolicyInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

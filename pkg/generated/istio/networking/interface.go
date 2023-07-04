@@ -19,19 +19,14 @@ limitations under the License.
 package networking
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/istio/internalinterfaces"
-	v1alpha3 "github.com/maistra/xns-informer/pkg/generated/istio/networking/v1alpha3"
-	v1beta1 "github.com/maistra/xns-informer/pkg/generated/istio/networking/v1beta1"
+	networkingv1alpha3 "github.com/maistra/xns-informer/pkg/generated/istio/networking/v1alpha3"
+	networkingv1beta1 "github.com/maistra/xns-informer/pkg/generated/istio/networking/v1beta1"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
+	networking "istio.io/client-go/pkg/informers/externalversions/networking"
+	v1alpha3 "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
+	v1beta1 "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
 )
-
-// Interface provides access to each of this group's versions.
-type Interface interface {
-	// V1alpha3 provides access to shared informers for resources in V1alpha3.
-	V1alpha3() v1alpha3.Interface
-	// V1beta1 provides access to shared informers for resources in V1beta1.
-	V1beta1() v1beta1.Interface
-}
 
 type group struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -40,16 +35,16 @@ type group struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) networking.Interface {
 	return &group{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // V1alpha3 returns a new v1alpha3.Interface.
 func (g *group) V1alpha3() v1alpha3.Interface {
-	return v1alpha3.New(g.factory, g.namespaces, g.tweakListOptions)
+	return networkingv1alpha3.New(g.factory, g.namespaces, g.tweakListOptions)
 }
 
 // V1beta1 returns a new v1beta1.Interface.
 func (g *group) V1beta1() v1beta1.Interface {
-	return v1beta1.New(g.factory, g.namespaces, g.tweakListOptions)
+	return networkingv1beta1.New(g.factory, g.namespaces, g.tweakListOptions)
 }

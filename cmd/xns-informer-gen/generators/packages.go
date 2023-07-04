@@ -114,6 +114,14 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		externalVersionPackagePath = filepath.Join(arguments.OutputPackagePath, "externalversions")
 	}
 
+	// When informers package is specified, then we don't generate interfaces, like GenericInformer, group.Interface
+	// or version.Interface, because generated factory methods return interfaces from the specified package.
+	var generateInterfaces bool
+	if customArgs.InformersPackage == "" {
+		generateInterfaces = true
+		customArgs.InformersPackage = filepath.Join(arguments.OutputPackagePath)
+	}
+
 	var packageList generator.Packages
 	typesForGroupVersion := make(map[clientgentypes.GroupVersion][]*types.Type)
 
@@ -197,39 +205,47 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		typesToGenerate = orderer.OrderTypes(typesToGenerate)
 
 		if internal {
-			packageList = append(packageList, versionPackage(internalVersionPackagePath, groupPackageName, gv, groupGoNames[groupPackageName],
-				boilerplate, typesToGenerate, customArgs.InternalClientSetPackage, customArgs.ListersPackage))
+			packageList = append(packageList, versionPackage(internalVersionPackagePath, customArgs.InternalClientSetPackage,
+				customArgs.InformersPackage, customArgs.ListersPackage, groupPackageName, gv, groupGoNames[groupPackageName],
+				boilerplate, typesToGenerate, generateInterfaces))
 		} else {
-			packageList = append(packageList, versionPackage(externalVersionPackagePath, groupPackageName, gv, groupGoNames[groupPackageName],
-				boilerplate, typesToGenerate, customArgs.VersionedClientSetPackage, customArgs.ListersPackage))
+			packageList = append(packageList, versionPackage(externalVersionPackagePath, customArgs.VersionedClientSetPackage,
+				customArgs.InformersPackage, customArgs.ListersPackage, groupPackageName, gv, groupGoNames[groupPackageName],
+				boilerplate, typesToGenerate, generateInterfaces))
 		}
 	}
 
 	if len(externalGroupVersions) != 0 {
+		if generateInterfaces {
+			packageList = append(packageList, factoryInterfacePackage(externalVersionPackagePath, boilerplate, customArgs.VersionedClientSetPackage))
+		}
 		packageList = append(packageList,
-			factoryInterfacePackage(externalVersionPackagePath, boilerplate, customArgs.VersionedClientSetPackage),
-			factoryPackage(externalVersionPackagePath, boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
-				externalGroupVersions, customArgs.VersionedClientSetPackage, typesForGroupVersion))
+			factoryPackage(externalVersionPackagePath, customArgs.VersionedClientSetPackage, customArgs.InformersPackage,
+				boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
+				externalGroupVersions, typesForGroupVersion, generateInterfaces))
 		for _, gvs := range externalGroupVersions {
-			packageList = append(packageList, groupPackage(externalVersionPackagePath, gvs, boilerplate))
+			packageList = append(packageList, groupPackage(externalVersionPackagePath, customArgs.InformersPackage, gvs, boilerplate, generateInterfaces))
 		}
 	}
 
 	if len(internalGroupVersions) != 0 {
+		if generateInterfaces {
+			packageList = append(packageList, factoryInterfacePackage(internalVersionPackagePath, boilerplate, customArgs.InternalClientSetPackage))
+		}
 		packageList = append(packageList,
-			factoryInterfacePackage(internalVersionPackagePath, boilerplate, customArgs.InternalClientSetPackage),
-			factoryPackage(internalVersionPackagePath, boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
-				internalGroupVersions, customArgs.InternalClientSetPackage, typesForGroupVersion))
+			factoryPackage(internalVersionPackagePath, customArgs.InternalClientSetPackage, customArgs.InformersPackage,
+				boilerplate, groupGoNames, genutil.PluralExceptionListToMapOrDie(customArgs.PluralExceptions),
+				internalGroupVersions, typesForGroupVersion, generateInterfaces))
 		for _, gvs := range internalGroupVersions {
-			packageList = append(packageList, groupPackage(internalVersionPackagePath, gvs, boilerplate))
+			packageList = append(packageList, groupPackage(internalVersionPackagePath, customArgs.InformersPackage, gvs, boilerplate, generateInterfaces))
 		}
 	}
 
 	return packageList
 }
 
-func factoryPackage(basePackage string, boilerplate []byte, groupGoNames, pluralExceptions map[string]string,
-	groupVersions map[string]clientgentypes.GroupVersions, clientSetPackage string, typesForGroupVersion map[clientgentypes.GroupVersion][]*types.Type,
+func factoryPackage(basePackage, clientSetPackage, informersPackage string, boilerplate []byte, groupGoNames, pluralExceptions map[string]string,
+	groupVersions map[string]clientgentypes.GroupVersions, typesForGroupVersion map[clientgentypes.GroupVersion][]*types.Type, generateInterfaces bool,
 ) generator.Package {
 	return &generator.DefaultPackage{
 		PackageName: filepath.Base(basePackage),
@@ -242,10 +258,11 @@ func factoryPackage(basePackage string, boilerplate []byte, groupGoNames, plural
 						OptionalName: "factory",
 					},
 					outputPackage:             basePackage,
+					informersPackage:          informersPackage,
 					imports:                   generator.NewImportTracker(),
 					groupVersions:             groupVersions,
 					clientSetPackage:          clientSetPackage,
-					internalInterfacesPackage: packageForInternalInterfaces(basePackage),
+					internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
 					gvGoNames:                 groupGoNames,
 				},
 
@@ -253,12 +270,14 @@ func factoryPackage(basePackage string, boilerplate []byte, groupGoNames, plural
 					DefaultGen: generator.DefaultGen{
 						OptionalName: "generic",
 					},
-					outputPackage:        basePackage,
-					imports:              generator.NewImportTracker(),
-					groupVersions:        groupVersions,
-					pluralExceptions:     pluralExceptions,
-					typesForGroupVersion: typesForGroupVersion,
-					groupGoNames:         groupGoNames,
+					outputPackage:           basePackage,
+					informersPackage:        informersPackage,
+					imports:                 generator.NewImportTracker(),
+					groupVersions:           groupVersions,
+					pluralExceptions:        pluralExceptions,
+					typesForGroupVersion:    typesForGroupVersion,
+					groupGoNames:            groupGoNames,
+					generateGenericInformer: generateInterfaces,
 				})
 
 			return generators
@@ -288,7 +307,9 @@ func factoryInterfacePackage(basePackage string, boilerplate []byte, clientSetPa
 	}
 }
 
-func groupPackage(basePackage string, groupVersions clientgentypes.GroupVersions, boilerplate []byte) generator.Package {
+func groupPackage(
+	basePackage, informersPackage string, groupVersions clientgentypes.GroupVersions, boilerplate []byte, generateInterfaces bool,
+) generator.Package {
 	packagePath := filepath.Join(basePackage, groupVersions.PackageName)
 	groupPkgName := strings.Split(groupVersions.PackageName, ".")[0]
 
@@ -304,7 +325,9 @@ func groupPackage(basePackage string, groupVersions clientgentypes.GroupVersions
 				outputPackage:             packagePath,
 				groupVersions:             groupVersions,
 				imports:                   generator.NewImportTracker(),
-				internalInterfacesPackage: packageForInternalInterfaces(basePackage),
+				generateGroupInterface:    generateInterfaces,
+				groupInterfacePackage:     filepath.Join(informersPackage, groupVersions.PackageName),
+				internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
 			})
 			return generators
 		},
@@ -315,8 +338,8 @@ func groupPackage(basePackage string, groupVersions clientgentypes.GroupVersions
 	}
 }
 
-func versionPackage(basePackage string, groupPkgName string, gv clientgentypes.GroupVersion, groupGoName string, boilerplate []byte,
-	typesToGenerate []*types.Type, clientSetPackage, listersPackage string,
+func versionPackage(basePackage, clientSetPackage, informersPackage, listersPackage string, groupPkgName string,
+	gv clientgentypes.GroupVersion, groupGoName string, boilerplate []byte, typesToGenerate []*types.Type, generateInterfaces bool,
 ) generator.Package {
 	packagePath := filepath.Join(basePackage, groupPkgName, strings.ToLower(gv.Version.NonEmpty()))
 
@@ -330,9 +353,11 @@ func versionPackage(basePackage string, groupPkgName string, gv clientgentypes.G
 					OptionalName: "interface",
 				},
 				outputPackage:             packagePath,
+				groupVersionPackage:       filepath.Join(informersPackage, groupPkgName, gv.Version.String()),
+				generateVersionInterface:  generateInterfaces,
+				internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
 				imports:                   generator.NewImportTracker(),
 				types:                     typesToGenerate,
-				internalInterfacesPackage: packageForInternalInterfaces(basePackage),
 			})
 
 			for _, t := range typesToGenerate {
@@ -348,7 +373,7 @@ func versionPackage(basePackage string, groupPkgName string, gv clientgentypes.G
 					imports:                   generator.NewImportTracker(),
 					clientSetPackage:          clientSetPackage,
 					listersPackage:            listersPackage,
-					internalInterfacesPackage: packageForInternalInterfaces(basePackage),
+					internalInterfacesPackage: packageForInternalInterfaces(informersPackage),
 				})
 			}
 			return generators

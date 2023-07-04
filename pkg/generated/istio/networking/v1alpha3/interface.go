@@ -19,29 +19,10 @@ limitations under the License.
 package v1alpha3
 
 import (
-	internalinterfaces "github.com/maistra/xns-informer/pkg/generated/istio/internalinterfaces"
 	informers "github.com/maistra/xns-informer/pkg/informers"
+	internalinterfaces "istio.io/client-go/pkg/informers/externalversions/internalinterfaces"
+	v1alpha3 "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
 )
-
-// Interface provides access to all the informers in this group version.
-type Interface interface {
-	// DestinationRules returns a DestinationRuleInformer.
-	DestinationRules() DestinationRuleInformer
-	// EnvoyFilters returns a EnvoyFilterInformer.
-	EnvoyFilters() EnvoyFilterInformer
-	// Gateways returns a GatewayInformer.
-	Gateways() GatewayInformer
-	// ServiceEntries returns a ServiceEntryInformer.
-	ServiceEntries() ServiceEntryInformer
-	// Sidecars returns a SidecarInformer.
-	Sidecars() SidecarInformer
-	// VirtualServices returns a VirtualServiceInformer.
-	VirtualServices() VirtualServiceInformer
-	// WorkloadEntries returns a WorkloadEntryInformer.
-	WorkloadEntries() WorkloadEntryInformer
-	// WorkloadGroups returns a WorkloadGroupInformer.
-	WorkloadGroups() WorkloadGroupInformer
-}
 
 type version struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -50,46 +31,46 @@ type version struct {
 }
 
 // New returns a new Interface.
-func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+func New(f internalinterfaces.SharedInformerFactory, namespaces informers.NamespaceSet, tweakListOptions internalinterfaces.TweakListOptionsFunc) v1alpha3.Interface {
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
 // DestinationRules returns a DestinationRuleInformer.
-func (v *version) DestinationRules() DestinationRuleInformer {
+func (v *version) DestinationRules() v1alpha3.DestinationRuleInformer {
 	return &destinationRuleInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // EnvoyFilters returns a EnvoyFilterInformer.
-func (v *version) EnvoyFilters() EnvoyFilterInformer {
+func (v *version) EnvoyFilters() v1alpha3.EnvoyFilterInformer {
 	return &envoyFilterInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // Gateways returns a GatewayInformer.
-func (v *version) Gateways() GatewayInformer {
+func (v *version) Gateways() v1alpha3.GatewayInformer {
 	return &gatewayInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // ServiceEntries returns a ServiceEntryInformer.
-func (v *version) ServiceEntries() ServiceEntryInformer {
+func (v *version) ServiceEntries() v1alpha3.ServiceEntryInformer {
 	return &serviceEntryInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // Sidecars returns a SidecarInformer.
-func (v *version) Sidecars() SidecarInformer {
+func (v *version) Sidecars() v1alpha3.SidecarInformer {
 	return &sidecarInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // VirtualServices returns a VirtualServiceInformer.
-func (v *version) VirtualServices() VirtualServiceInformer {
+func (v *version) VirtualServices() v1alpha3.VirtualServiceInformer {
 	return &virtualServiceInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // WorkloadEntries returns a WorkloadEntryInformer.
-func (v *version) WorkloadEntries() WorkloadEntryInformer {
+func (v *version) WorkloadEntries() v1alpha3.WorkloadEntryInformer {
 	return &workloadEntryInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
 
 // WorkloadGroups returns a WorkloadGroupInformer.
-func (v *version) WorkloadGroups() WorkloadGroupInformer {
+func (v *version) WorkloadGroups() v1alpha3.WorkloadGroupInformer {
 	return &workloadGroupInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
 }
