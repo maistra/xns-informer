@@ -40,6 +40,16 @@ func (v *version) MutatingWebhookConfigurations() v1beta1.MutatingWebhookConfigu
 	return &mutatingWebhookConfigurationInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
+// ValidatingAdmissionPolicies returns a ValidatingAdmissionPolicyInformer.
+func (v *version) ValidatingAdmissionPolicies() v1beta1.ValidatingAdmissionPolicyInformer {
+	return &validatingAdmissionPolicyInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// ValidatingAdmissionPolicyBindings returns a ValidatingAdmissionPolicyBindingInformer.
+func (v *version) ValidatingAdmissionPolicyBindings() v1beta1.ValidatingAdmissionPolicyBindingInformer {
+	return &validatingAdmissionPolicyBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
 // ValidatingWebhookConfigurations returns a ValidatingWebhookConfigurationInformer.
 func (v *version) ValidatingWebhookConfigurations() v1beta1.ValidatingWebhookConfigurationInformer {
 	return &validatingWebhookConfigurationInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}

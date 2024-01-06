@@ -19,10 +19,12 @@ limitations under the License.
 package apis
 
 import (
+	apisv1 "github.com/maistra/xns-informer/pkg/generated/gatewayapi/apis/v1"
 	apisv1alpha2 "github.com/maistra/xns-informer/pkg/generated/gatewayapi/apis/v1alpha2"
 	apisv1beta1 "github.com/maistra/xns-informer/pkg/generated/gatewayapi/apis/v1beta1"
 	informers "github.com/maistra/xns-informer/pkg/informers"
 	apis "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis"
+	v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 	v1alpha2 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1alpha2"
 	v1beta1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
 	internalinterfaces "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/internalinterfaces"
@@ -47,4 +49,9 @@ func (g *group) V1alpha2() v1alpha2.Interface {
 // V1beta1 returns a new v1beta1.Interface.
 func (g *group) V1beta1() v1beta1.Interface {
 	return apisv1beta1.New(g.factory, g.namespaces, g.tweakListOptions)
+}
+
+// V1 returns a new v1.Interface.
+func (g *group) V1() v1.Interface {
+	return apisv1.New(g.factory, g.namespaces, g.tweakListOptions)
 }

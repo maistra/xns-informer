@@ -35,6 +35,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespaces informers.Namesp
 	return &version{factory: f, namespaces: namespaces, tweakListOptions: tweakListOptions}
 }
 
+// BackendTLSPolicies returns a BackendTLSPolicyInformer.
+func (v *version) BackendTLSPolicies() v1alpha2.BackendTLSPolicyInformer {
+	return &backendTLSPolicyInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
+}
+
 // GRPCRoutes returns a GRPCRouteInformer.
 func (v *version) GRPCRoutes() v1alpha2.GRPCRouteInformer {
 	return &gRPCRouteInformer{factory: v.factory, namespaces: v.namespaces, tweakListOptions: v.tweakListOptions}
