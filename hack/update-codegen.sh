@@ -71,6 +71,7 @@ istio_group_versions=(
   istio.io/client-go/pkg/apis/networking/v1alpha3
   istio.io/client-go/pkg/apis/networking/v1beta1
   istio.io/client-go/pkg/apis/security/v1beta1
+  istio.io/client-go/pkg/apis/security/v1
   istio.io/client-go/pkg/apis/telemetry/v1alpha1
 )
 
