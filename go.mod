@@ -6,7 +6,7 @@ require (
 	github.com/openshift/api v0.0.0-20200929171550-c99a4deebbe5
 	github.com/openshift/client-go v0.0.0-20200929181438-91d71ef2122c
 	github.com/spf13/pflag v1.0.5
-	istio.io/client-go v1.18.0
+	istio.io/client-go v1.18.6
 	k8s.io/api v0.27.0
 	k8s.io/apimachinery v0.27.0
 	k8s.io/client-go v0.27.0
@@ -55,7 +55,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	istio.io/api v0.0.0-20230524015941-fa6c5f7916bf // indirect
+	istio.io/api v0.0.0-20231206023236-e7cadb36da57 // indirect
 	k8s.io/apiextensions-apiserver v0.27.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a // indirect
 	k8s.io/utils v0.0.0-20230209194617-a36077c30491 // indirect
