@@ -15,7 +15,7 @@ require (
 	k8s.io/code-generator v0.28.3
 	k8s.io/gengo v0.0.0-20230829151522-9cce18d56c01
 	k8s.io/klog/v2 v2.100.1
-	sigs.k8s.io/gateway-api v1.0.1-0.20231102234152-004e14bfe016
+	sigs.k8s.io/gateway-api v1.0.0
 )
 
 require (
