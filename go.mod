@@ -11,7 +11,7 @@ require (
 	github.com/openshift/api v0.0.0-20231212152002-ef62af078a93
 	github.com/openshift/client-go v0.0.0-20231212205830-0ab0864ec8c2
 	github.com/spf13/pflag v1.0.5
-	istio.io/client-go v1.20.2-0.20231213021015-d9f0411d8b67
+	istio.io/client-go v1.20.0-rc.0
 	k8s.io/api v0.28.3
 	k8s.io/apimachinery v0.28.3
 	k8s.io/client-go v0.28.3
