@@ -235,8 +235,15 @@ linters-settings:
       # - unnamedResult
       # - wrapperFunc
   depguard:
-    packages-with-error-message:
-    - github.com/gogo/protobuf: "gogo/protobuf is deprecated, use golang/protobuf"
+    rules:
+      prevent_deprecated_packages:
+        list-mode: lax
+        files:
+        - $all
+        - "!$test"
+        deny:
+        - pkg: github.com/gogo/protobuf
+          desc: "gogo/protobuf is deprecated, use golang/protobuf"
 issues:
   # List of regexps of issue texts to exclude, empty list by default.
   # But independently from this option we use default exclude patterns,
