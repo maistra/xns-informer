@@ -5,7 +5,7 @@ clean:
 	rm -rf out/
 
 deps:
-	go mod tidy -go=1.20
+	go mod tidy -go=1.21
 	go mod download
 
 build: deps
